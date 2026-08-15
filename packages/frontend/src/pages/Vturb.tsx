@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Layers, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DateRangeFilter, DateRange, getDefaultDateRange } from '@/components/DateRangeFilter';
-import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { useVturbOverview, useVturbStatus } from '@/hooks/useVturb';
@@ -47,7 +46,6 @@ export default function Vturb() {
     <DashboardLayout>
       <div className="animate-sentinel-in space-y-6">
         <div className="flex items-center gap-3">
-          <WorkspaceSwitcher variant="inline" />
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

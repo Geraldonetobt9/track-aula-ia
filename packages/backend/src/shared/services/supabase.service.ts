@@ -23,13 +23,9 @@ export class SupabaseService {
     return data.user;
   }
 
-  async isAdmin(userId: string): Promise<boolean> {
-    const { data } = await this.client
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
-    return !!data;
+  async isAdmin(_userId: string): Promise<boolean> {
+    // Nao ha mais papeis: a tabela user_roles saiu junto com o painel admin.
+    // Quem administra usa o painel do Supabase, nao o produto.
+    return false;
   }
 }

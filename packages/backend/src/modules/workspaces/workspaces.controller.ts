@@ -29,10 +29,6 @@ export class WorkspacesController {
     return this.workspacesService.list(userId, targetUserId);
   }
 
-  @Get('archived')
-  listArchivedByUser(@CurrentUser('id') userId: string) {
-    return this.workspacesService.listArchived(userId);
-  }
 
   @Post()
   create(

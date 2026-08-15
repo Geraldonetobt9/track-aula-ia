@@ -19,7 +19,6 @@ import {
   Video,
 } from 'lucide-react';
 import sentinelaLogo from '@/assets/sentinela-logo.png';
-import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { isOperatorEmail } from '@/lib/featureAccess';
 
@@ -67,8 +66,6 @@ export function Sidebar({ onNavClick, onCollapsedChange }: { onNavClick?: () => 
           </Button>
         </div>
 
-        {/* Workspace Switcher */}
-        <WorkspaceSwitcher collapsed={collapsed} />
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-3 pt-4">

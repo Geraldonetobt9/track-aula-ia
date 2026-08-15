@@ -97,12 +97,6 @@ export class FacebookService {
 
     const connIds = profileConns.map((c) => c.id);
 
-    // Remove workspace_connections first (FK constraint)
-    await client
-      .from('workspace_connections')
-      .delete()
-      .in('facebook_connection_id', connIds);
-
     // Delete all facebook_connections for this profile
     const { error } = await client
       .from('facebook_connections')

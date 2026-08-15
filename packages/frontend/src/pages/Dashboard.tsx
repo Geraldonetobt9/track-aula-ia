@@ -30,7 +30,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SalesGlobe } from '@/components/dashboard/SalesGlobe';
 import { SyncButton } from '@/components/SyncButton';
 import { DateRangeFilter, DateRange, getDefaultDateRange, getPresetFromRange } from '@/components/DateRangeFilter';
-import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import { AdAccountFilter } from '@/components/AdAccountFilter';
 import { ProductFilter } from '@/components/ProductFilter';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
@@ -338,7 +337,6 @@ export default function Dashboard() {
       <div className="space-y-6 animate-sentinel-in">
         {/* Workspace Switcher */}
         <div className="flex items-center gap-3">
-          <WorkspaceSwitcher variant="inline" />
         </div>
 
         {/* Header */}

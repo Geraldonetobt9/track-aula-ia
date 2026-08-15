@@ -12,7 +12,7 @@ export class HealthController {
     const start = Date.now();
     const { error } = await this.supabase
       .getClient()
-      .from('plan_rules')
+      .from('workspaces')
       .select('id')
       .limit(1);
 

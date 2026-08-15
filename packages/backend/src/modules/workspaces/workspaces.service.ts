@@ -4,13 +4,11 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { SupabaseService } from '../../shared/services/supabase.service';
-import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 
 @Injectable()
 export class WorkspacesService {
   constructor(
     private readonly supabase: SupabaseService,
-    private readonly planLimits: PlanLimitsService,
   ) {}
 
   private async verifyOwnership(userId: string, workspaceId: string): Promise<void> {
@@ -41,21 +39,7 @@ export class WorkspacesService {
       .from('workspaces')
       .select('id, user_id, name, ad_spend_tax_percentage, created_at, updated_at')
       .eq('user_id', effectiveUserId)
-      .is('archived_at', null)
       .order('created_at', { ascending: true });
-
-    if (error) throw error;
-    return data;
-  }
-
-  async listArchived(userId: string) {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('workspaces')
-      .select('id, user_id, name, ad_spend_tax_percentage, archived_at, created_at, updated_at')
-      .eq('user_id', userId)
-      .not('archived_at', 'is', null)
-      .order('archived_at', { ascending: false });
 
     if (error) throw error;
     return data;
@@ -66,7 +50,6 @@ export class WorkspacesService {
       throw new BadRequestException('name is required');
     }
 
-    await this.planLimits.assertCanCreateWorkspace(userId);
 
     const { data, error } = await this.supabase
       .getClient()
@@ -77,7 +60,6 @@ export class WorkspacesService {
 
     if (error) throw error;
 
-    await this.planLimits.invalidate(userId);
 
     return data;
   }
