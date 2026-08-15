@@ -86,8 +86,6 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  v_workspace_id uuid;
 BEGIN
   INSERT INTO public.profiles (user_id, email, name)
   VALUES (
@@ -99,12 +97,7 @@ BEGIN
 
   -- A área única. O nome não aparece em lugar nenhum da interface.
   INSERT INTO public.workspaces (user_id, name)
-  VALUES (NEW.id, 'Principal')
-  RETURNING id INTO v_workspace_id;
-
-  INSERT INTO public.sync_schedules (user_id, workspace_id)
-  VALUES (NEW.id, v_workspace_id)
-  ON CONFLICT DO NOTHING;
+  VALUES (NEW.id, 'Principal');
 
   RETURN NEW;
 END;
@@ -114,7 +107,6 @@ $$;
 DO $$
 DECLARE
   u record;
-  v_workspace_id uuid;
 BEGIN
   FOR u IN SELECT id, email FROM auth.users LOOP
     INSERT INTO public.profiles (user_id, email)
@@ -123,12 +115,7 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM public.workspaces WHERE user_id = u.id) THEN
       INSERT INTO public.workspaces (user_id, name)
-      VALUES (u.id, 'Principal')
-      RETURNING id INTO v_workspace_id;
-
-      INSERT INTO public.sync_schedules (user_id, workspace_id)
-      VALUES (u.id, v_workspace_id)
-      ON CONFLICT DO NOTHING;
+      VALUES (u.id, 'Principal');
     END IF;
   END LOOP;
 END;
