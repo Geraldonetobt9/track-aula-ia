@@ -47,8 +47,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch user profile from database
-  const fetchUserProfile = async (userId: string): Promise<User | null> => {
+  /**
+   * Monta o User a partir de profiles, caindo na sessao quando a linha nao
+   * existe. Recebe o usuario do Auth inteiro, e nao so o id, justamente para
+   * ter esse fallback.
+   */
+  const fetchUserProfile = async (authUser: SupabaseUser): Promise<User | null> => {
+    const userId = authUser.id;
+
+    // Identidade derivada so da sessao. E o que o app usa quando profiles
+    // ainda nao tem linha para esta pessoa.
+    const fromSession = (): User => ({
+      id: userId,
+      name: (authUser.user_metadata?.name as string) || authUser.email?.split('@')[0] || '',
+      email: authUser.email || '',
+      role: 'user',
+      plan: 'unlimited',
+      avatar_url: undefined,
+      createdAt: authUser.created_at,
+      active: true,
+      subscription_end: null,
+    });
+
     try {
       // Nao ha mais plano nem papel: a cobranca e o painel admin sairam do
       // produto, e com eles as tabelas plan_rules e user_roles. Consultar as
@@ -59,12 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId)
         .maybeSingle();
 
+      // Nem erro de consulta nem ausencia de linha podem barrar o login. A
+      // identidade real vem do Auth; profiles e um registro de conveniencia.
+      // Barrar aqui devolvia a pessoa pro login sem mensagem nenhuma — nao
+      // entra e nao explica, que e o pior dos dois mundos.
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        return null;
+        console.error('[Auth] Falha ao ler profiles, usando a sessao:', profileError);
+        return fromSession();
       }
 
-      if (!profile) return null;
+      if (!profile) {
+        console.warn('[Auth] Sem linha em profiles para', userId, '— usando a sessao.');
+        return fromSession();
+      }
 
       return {
         id: userId,
@@ -96,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSupabaseUser(currentSession?.user ?? null);
 
         if (currentSession?.user) {
-          fetchUserProfile(currentSession.user.id).then((profile) => {
+          fetchUserProfile(currentSession.user).then((profile) => {
             if (isMounted) setUser(profile);
           });
         } else {
@@ -123,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSupabaseUser(currentSession?.user ?? null);
 
         if (currentSession?.user) {
-          const profile = await fetchUserProfile(currentSession.user.id);
+          const profile = await fetchUserProfile(currentSession.user);
           if (isMounted) setUser(profile);
         }
       } catch (error) {
@@ -157,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.user) {
         // Fetch profile and role BEFORE returning so ProtectedRoute sees the user
-        const profile = await fetchUserProfile(data.user.id);
+        const profile = await fetchUserProfile(data.user);
         setUser(profile);
         setSupabaseUser(data.user);
         setSession(data.session);
@@ -253,7 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       // Refresh profile
-      const profile = await fetchUserProfile(supabaseUser.id);
+      const profile = await fetchUserProfile(supabaseUser);
       if (profile) {
         setUser(profile);
       }
