@@ -1,0 +1,91 @@
+{
+    "buyer": {
+        "name": "Elibel Colon Pichardo",
+        "email": "elibelcolon@hotmail.com",
+        "address": {
+            "country": "Brasil",
+            "country_iso": "BR"
+        },
+        "document": "",
+        "last_name": "Pichardo",
+        "first_name": "Elibel",
+        "document_type": "",
+        "checkout_phone": "18099833656"
+    },
+    "product": {
+        "id": 6881018,
+        "name": "UGC Creators",
+        "ucode": "cda49ffc-ac05-42ca-ae7b-dc482270bf45",
+        "support_email": "contatolmdigital01@gmail.com",
+        "warranty_date": "2026-01-15T00:00:00Z",
+        "has_co_production": false,
+        "is_physical_product": false
+    },
+    "producer": {
+        "name": "ERLANE MARIA DIAS SOUZA",
+        "document": "97901881615",
+        "legal_nature": "Pessoa Física"
+    },
+    "purchase": {
+        "offer": {
+            "code": "zi4n33pb"
+        },
+        "price": {
+            "value": 664,
+            "currency_value": "DOP"
+        },
+        "origin": {
+            "xcod": "FBhQwK21wXxRESCALA+CT3|120238985144210444hQwK21wXxRMUNDO+TODO+-+EXCLUSÕES|120238985144230444hQwK21wXxRCT+3|120238985144220444hQwK21wXxRInstagram_Feed"
+        },
+        "status": "APPROVED",
+        "payment": {
+            "type": "CREDIT_CARD",
+            "installments_number": 1
+        },
+        "is_funnel": true,
+        "full_price": {
+            "value": 664,
+            "currency_value": "DOP"
+        },
+        "invoice_by": "SELLER",
+        "order_bump": {
+            "is_order_bump": false
+        },
+        "order_date": 1767884516000,
+        "transaction": "HP0612608892",
+        "approved_date": 1767884520000,
+        "business_model": "A",
+        "checkout_country": {
+            "iso": "BR",
+            "name": "Brasil"
+        },
+        "original_offer_price": {
+            "value": 10.47,
+            "currency_value": "USD"
+        },
+        "subscription_anticipation_purchase": false
+    },
+    "affiliates": [
+        {
+            "name": "",
+            "affiliate_code": ""
+        }
+    ],
+    "commissions": [
+        {
+            "value": 1.08,
+            "source": "MARKETPLACE",
+            "currency_value": "USD"
+        },
+        {
+            "value": 8.85,
+            "source": "PRODUCER",
+            "currency_value": "USD",
+            "currency_conversion": {
+                "conversion_rate": 5.388604,
+                "converted_value": 47.69,
+                "converted_to_currency": "BRL"
+            }
+        }
+    ]
+}

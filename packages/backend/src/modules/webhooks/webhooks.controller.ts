@@ -1,0 +1,136 @@
+import {
+  Controller,
+  Post,
+  Param,
+  Body,
+  Req,
+  Res,
+  Logger,
+} from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
+import { FastifyRequest, FastifyReply } from 'fastify';
+import { extractWebhookToken } from '../../shared/helpers/extract-webhook-token';
+import { WebhookParamsDto } from './dto/webhook-params.dto';
+import { WebhookQueueService } from './webhook-queue.service';
+import { N8nProfilesProcessor } from './processors/n8n-profiles.processor';
+
+/** Platforms that process synchronously in the controller (not via WebhookQueueService). */
+const CONTROLLER_PROCESSORS: Record<string, true> = {
+  'n8n-profiles': true,
+};
+
+/**
+ * Platforms whose processor validates authentication itself (e.g., HMAC signature).
+ * These bypass the controller-level token pre-check because the auth material is
+ * not a simple token in a header/body field — typically it's a per-payload signature
+ * sent via querystring (Kiwify) or custom handler logic (n8n-profiles).
+ */
+const SELF_AUTHENTICATING_PLATFORMS = new Set(['kiwify', 'n8n-profiles', 'mundpay']);
+
+/** All known platforms (sync + queued). */
+const KNOWN_PLATFORMS = new Set([
+  'kirvano',
+  'hotmart',
+  'guru',
+  'perfectpay',
+  'kiwify',
+  'ticto',
+  'cakto',
+  'payt',
+  'n8n-profiles',
+  'hubla',
+  'cartpanda',
+  'ggcheckout',
+  'lastlink',
+  'eduzz',
+  'mundpay',
+  'monetizze',
+  'greenn',
+]);
+
+@SkipThrottle()
+@Controller('webhooks')
+export class WebhooksController {
+  private readonly logger = new Logger(WebhooksController.name);
+
+  constructor(
+    private readonly webhookQueue: WebhookQueueService,
+    private readonly n8nProfiles: N8nProfilesProcessor,
+  ) {}
+
+  @Post(':platform')
+  async handleWebhook(
+    @Param() params: WebhookParamsDto,
+    @Body() body: any,
+    @Req() req: FastifyRequest,
+    @Res() res: FastifyReply,
+  ): Promise<void> {
+    const { platform } = params;
+    this.logger.log(`Webhook received for platform: ${platform}`);
+
+    if (!KNOWN_PLATFORMS.has(platform)) {
+      res.status(404).send({ error: `Unknown platform: ${platform}` });
+      return;
+    }
+
+    try {
+      const headers: Record<string, string | string[] | undefined> =
+        req.headers as any;
+      const authToken = extractWebhookToken({ headers }, body, platform);
+
+      // Reject webhooks without auth token, unless the platform's processor validates auth itself
+      // (e.g., Kiwify validates HMAC signature from querystring; n8n-profiles runs custom logic).
+      if (!authToken && !SELF_AUTHENTICATING_PLATFORMS.has(platform)) {
+        this.logger.warn(`Webhook ${platform}: rejected — no authentication token`);
+        res.status(200).send({ success: false, message: 'Missing authentication token' });
+        return;
+      }
+
+      // Guru and n8n-profiles have their own processors in the controller
+      if (CONTROLLER_PROCESSORS[platform]) {
+        const result = await this.processSynchronously(
+          platform,
+          body,
+          authToken,
+        );
+        res.status(result.status).send(result.body);
+        return;
+      }
+
+      // All checkout platforms are processed directly (no queue)
+      const rawBody = (req as any).rawBody || JSON.stringify(body);
+      const queryParams: Record<string, string> = (req.query as any) || {};
+
+      const result = await this.webhookQueue.processDirect({
+        platform,
+        body,
+        authToken,
+        headers,
+        rawBody,
+        queryParams,
+      });
+
+      res.status(result.status).send(result.body);
+    } catch (error: any) {
+      this.logger.error(
+        `Webhook ${platform} error: ${error.message}`,
+        error.stack,
+      );
+      res.status(500).send({
+        error: 'Internal server error',
+        details: error.message,
+      });
+    }
+  }
+
+  private async processSynchronously(
+    platform: string,
+    body: any,
+    authToken: string | null,
+  ): Promise<{ status: number; body: any }> {
+    if (platform === 'n8n-profiles') {
+      return this.n8nProfiles.process(body, authToken);
+    }
+    return { status: 404, body: { error: `Unknown sync platform: ${platform}` } };
+  }
+}

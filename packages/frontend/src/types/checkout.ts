@@ -1,0 +1,347 @@
+export type CheckoutPlatform = 'hotmart' | 'kiwify' | 'kirvano' | 'guru' | 'perfectpay' | 'ticto' | 'payt' | 'cakto' | 'hubla' | 'cartpanda' | 'ggcheckout' | 'lastlink' | 'eduzz' | 'mundpay' | 'monetizze' | 'greenn';
+
+export interface CheckoutIntegration {
+  id: string;
+  platform: CheckoutPlatform;
+  name: string;
+  webhook_secret: string | null;
+  is_active: boolean;
+  use_commission_value: boolean;
+  last_webhook_at: string | null;
+}
+
+export interface CheckoutPlatformConfig {
+  name: string;
+  description: string;
+  color: string;
+  instructions: string[];
+  webhookPath: string;
+  tokenLabel: string;
+  tokenHelp: string;
+  /**
+   * True quando a plataforma aceita um secret definido pelo usuário (em vez de
+   * fornecer um token gerado pela plataforma). Habilita o botão "Gerar token"
+   * no modal de configuração. Atualmente: GG Checkout, Mundpay.
+   */
+  supportsGeneratedToken?: boolean;
+  /**
+   * True quando o token autentica via query param na URL (em vez de header).
+   * O modal mostra um campo extra com a URL completa (`?token=<value>`) que
+   * o usuário deve colar no campo de URL do webhook da plataforma. Atualmente:
+   * apenas Mundpay.
+   */
+  tokenInUrl?: boolean;
+}
+
+export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig> = {
+  hotmart: {
+    name: 'Hotmart',
+    description: 'Plataforma de produtos digitais',
+    color: 'bg-foreground/20',
+    webhookPath: 'webhook-hotmart',
+    tokenLabel: 'Hottok',
+    tokenHelp: 'Encontre o Hottok em: Hotmart > Ferramentas > Webhooks > Configurações. Copie o valor do campo "Hottok".',
+    instructions: [
+      '1. Acesse sua conta Hotmart',
+      '2. Vá em "Ferramentas" > "Webhooks"',
+      '3. Copie o valor do "Hottok" e cole no campo abaixo',
+      '4. Clique em "Adicionar endpoint"',
+      '5. Cole a URL do webhook (sem parâmetros)',
+      '6. Selecione os eventos: PURCHASE_APPROVED, PURCHASE_COMPLETE, PURCHASE_REFUNDED, PURCHASE_CANCELED',
+      '7. Salve as configurações',
+    ],
+  },
+  kiwify: {
+    name: 'Kiwify',
+    description: 'Plataforma de vendas',
+    color: 'bg-foreground/15',
+    webhookPath: 'webhook-kiwify',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'Na Kiwify, o token é gerado ao criar o webhook. Copie e cole aqui.',
+    instructions: [
+      '1. Acesse sua conta Kiwify',
+      '2. Vá em "Configurações" > "Webhooks"',
+      '3. Clique em "Adicionar novo webhook"',
+      '4. Cole a URL do webhook abaixo (sem parâmetros)',
+      '5. Copie o token/signature gerado pela Kiwify e cole no campo abaixo',
+      '6. Ative o webhook e salve',
+    ],
+  },
+  kirvano: {
+    name: 'Kirvano',
+    description: 'Checkout otimizado',
+    color: 'bg-foreground/10',
+    webhookPath: 'webhook-kirvano',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'Na Kirvano, copie o token de autenticação do webhook nas configurações da integração.',
+    instructions: [
+      '1. Acesse sua conta Kirvano',
+      '2. Vá em "Integrações" > "Webhooks"',
+      '3. Clique em "Configurar webhook"',
+      '4. Cole a URL do webhook abaixo (sem parâmetros)',
+      '5. Copie o token gerado pela Kirvano e cole no campo abaixo',
+      '6. Salve as configurações',
+    ],
+  },
+  guru: {
+    name: 'Guru Digital',
+    description: 'Plataforma de infoprodutos',
+    color: 'bg-primary/20',
+    webhookPath: 'webhook-guru',
+    tokenLabel: 'API Token',
+    tokenHelp: 'No Guru Digital, copie o api_token nas configurações de integração/webhook.',
+    instructions: [
+      '1. Acesse o painel do Guru Digital',
+      '2. Vá em Configurações > Integrações > Webhooks',
+      '3. Copie o API Token e cole no campo abaixo',
+      '4. Clique em "Adicionar Webhook"',
+      '5. Cole a URL do webhook abaixo (sem parâmetros)',
+      '6. Selecione os eventos: Transação criada, Transação aprovada, Transação reembolsada, Transação cancelada',
+      '7. Salve as configurações',
+    ],
+  },
+  perfectpay: {
+    name: 'Perfect Pay',
+    description: 'Checkout e plataforma de vendas',
+    color: 'bg-foreground/20',
+    webhookPath: 'webhook-perfectpay',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'Na Perfect Pay, copie o token de autenticação nas configurações de PostBack/Webhook.',
+    instructions: [
+      '1. Acesse Perfect Pay > Ferramentas > PostBack/Webhook',
+      '2. Copie o token de autenticação e cole no campo abaixo',
+      '3. Cole a URL do webhook abaixo (sem parâmetros)',
+      '4. Selecione os eventos: Aprovado e Devolvido',
+      '5. Formato postback: "Perfect Pay"',
+      '6. Salve as configurações',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  ticto: {
+    name: 'Ticto',
+    description: 'Checkout inteligente para infoprodutos',
+    color: 'bg-foreground/15',
+    webhookPath: 'webhook-ticto',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'Na Ticto, copie o token de autenticação nas configurações do webhook.',
+    instructions: [
+      '1. Acesse Ticto > TicTools > Webhook',
+      '2. Clique em "+ Adicionar"',
+      '3. Selecione o produto (ou todos)',
+      '4. Cole a URL do webhook abaixo (sem parâmetros)',
+      '5. Copie o token gerado pela Ticto e cole no campo abaixo',
+      '6. Selecione versão 2.0 (V2)',
+      '7. Eventos: marque "Venda Realizada" e "Reembolso"',
+      '8. Salve as configurações',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  payt: {
+    name: 'PayT',
+    description: 'Checkout para produtos físicos e digitais',
+    color: 'bg-foreground/20',
+    webhookPath: 'webhook-payt',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'Na PayT, copie o token de autenticação nas configurações de postback.',
+    instructions: [
+      '1. Acesse PayT > Ofertas & Produtos > Postbacks',
+      '2. Clique em "Cadastrar"',
+      '3. Selecione o produto (ou todos)',
+      '4. Tipo: selecione "PayT V1"',
+      '5. Cole a URL do webhook abaixo (sem parâmetros)',
+      '6. Copie o token gerado pela PayT e cole no campo abaixo',
+      '7. Eventos: marque "Finalizada/Aprovada", "Cancelada - Reembolsada" e "Cancelada - Chargeback"',
+      '8. Clique em "Testar Url" para validar',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  cakto: {
+    name: 'Cakto',
+    description: 'Checkout e plataforma de vendas digitais',
+    color: 'bg-foreground/20',
+    webhookPath: 'webhook-cakto',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'Na Cakto, copie o token de autenticação nas configurações do webhook.',
+    instructions: [
+      '1. Acesse Cakto > menu lateral > Integrações > Webhooks',
+      '2. Clique em "Adicionar"',
+      '3. Dê um nome ao webhook (ex: "Sentinela")',
+      '4. Cole a URL do webhook abaixo (sem parâmetros)',
+      '5. Copie o token gerado pela Cakto e cole no campo abaixo',
+      '6. Selecione os produtos desejados (ou todos)',
+      '7. Eventos: marque "Compra aprovada", "Reembolso" e "Chargeback"',
+      '8. Salve o webhook',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  hubla: {
+    name: 'Hubla',
+    description: 'Plataforma de comunidades e infoprodutos',
+    color: 'bg-foreground/20',
+    webhookPath: 'webhook-hubla',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'Na Hubla, abra a aba "Autenticação" da regra de webhook e copie o Token gerado.',
+    instructions: [
+      '1. Na coluna da esquerda da Hubla, clique em "Integrações"',
+      '2. Clique em "Webhooks" e depois em "Configurar"',
+      '3. Clique em "Adicionar regra"',
+      '4. Em nome, digite "Sentinela"',
+      '5. Em URL, cole a URL do webhook abaixo (sem parâmetros)',
+      '6. Em produtos, selecione todos',
+      '7. Em ofertas, selecione todas',
+      '8. Em Eventos, selecione: "Acesso concedido (v2)" e "Acesso removido (v2)"',
+      '9. Clique em "Criar regra"',
+      '10. Abra a aba "Autenticação", copie o Token do webhook e cole no campo abaixo',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  cartpanda: {
+    name: 'CartPanda',
+    description: 'Checkout e plataforma de vendas',
+    color: 'bg-foreground/15',
+    webhookPath: 'webhook-cartpanda',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'No CartPanda, abra o menu com as iniciais do usuário (canto superior direito) e copie o token exibido.',
+    instructions: [
+      '1. No menu lateral da CartPanda (canto inferior esquerdo), clique em "Admin"',
+      '2. Clique em "Notificações"',
+      '3. Role até a seção "Webhooks" e clique em "Configurar webhooks"',
+      '4. Clique em "Criar webhook"',
+      '5. Em evento, selecione "Pedido pago"',
+      '6. Em URL, cole a URL do webhook abaixo (sem parâmetros)',
+      '7. Selecione todos os produtos que deseja rastrear',
+      '8. Clique em "Salvar webhook"',
+      '9. Repita o processo para os eventos "Pedido Atualizado" e "Pedido Reembolsado"',
+      '10. Clique no menu com as iniciais do usuário (canto superior direito) e copie o token',
+      '11. Cole o token no campo abaixo',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  ggcheckout: {
+    name: 'GG Checkout',
+    description: 'Checkout otimizado para infoprodutos',
+    color: 'bg-foreground/10',
+    webhookPath: 'webhook-ggcheckout',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'A GG Checkout aceita um Secret definido por você. Use o botão "Gerar token" para criar uma string aleatória e cole o mesmo valor no campo "Secret" da GG Checkout.',
+    supportsGeneratedToken: true,
+    instructions: [
+      '1. No painel da GG Checkout, clique em "Configurações" no menu lateral e depois em "Webhook"',
+      '2. Clique em "Criar Webhook" e depois em "Adicionar integração"',
+      '3. No campo "Nome da integração", digite "Sentinela"',
+      '4. No campo "URL da integração", cole a URL do webhook abaixo (sem parâmetros)',
+      '5. Aqui no Sentinela, clique em "Gerar token" para criar um Secret aleatório, depois cole o MESMO valor no campo "Secret (opcional)" da GG Checkout',
+      '6. Em "Produtos", selecione os produtos que deseja rastrear',
+      '7. Em "Eventos", marque: "Pix Paid", "Card Paid", "Pix Refunded", "Card Refunded"',
+      '8. Clique em "Criar" para salvar o webhook na GG Checkout',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  lastlink: {
+    name: 'LastLink',
+    description: 'Plataforma de assinaturas e infoprodutos (integração por produto)',
+    color: 'bg-foreground/15',
+    webhookPath: 'webhook-lastlink',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'Na LastLink, copie o token exibido na tela de configuração do webhook do produto.',
+    instructions: [
+      '⚠️ ATENÇÃO: a LastLink exige UMA integração para CADA produto que você quer rastrear. Diferente das outras plataformas, não é uma integração por conta — é uma por produto. Crie uma integração separada no Sentinela para cada produto, identificando-os no nome (ex: "LastLink - Produto X").',
+      '1. No menu lateral da LastLink, clique em "Produtos"',
+      '2. Selecione o produto que deseja rastrear',
+      '3. Clique em "Integrações"',
+      '4. Procure por "LastLink - Webhook" e clique em "Ativar/Editar"',
+      '5. Clique em "Novo Webhook"',
+      '6. Em nome, escreva "Sentinela"',
+      '7. Em URL, cole a URL do webhook abaixo (sem parâmetros)',
+      '8. Copie o token exibido pela LastLink e cole no campo abaixo',
+      '9. Selecione os 10 eventos abaixo: "Pagamento estornado", "Pagamento reembolsado", "Compra completa", "Pagamento de Renovação Efetuado", "Assinatura Cancelada", "Assinatura Expirada", "Liberação e remoção de acesso", "Assinatura Pendente de Renovação", "Início liberação de acesso", "Fim liberação de acesso"',
+      '10. Clique em "Salvar"',
+      '🔁 Repita TODO o processo para CADA produto que deseja rastrear, criando uma integração separada no Sentinela para cada um.',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  eduzz: {
+    name: 'Eduzz',
+    description: 'Plataforma de produtos digitais e infoprodutos',
+    color: 'bg-foreground/20',
+    webhookPath: 'webhook-eduzz',
+    tokenLabel: 'Chave de Acesso',
+    tokenHelp: 'Na Eduzz, copie a Chave de Acesso (em "Chaves de acesso" no menu lateral). Ela autentica os webhooks via header x-eduzz-token ou x-signature (HMAC SHA-256).',
+    instructions: [
+      '1. Logado na Eduzz, abra https://console.eduzz.com/webhook/configs',
+      '2. Clique em "Nova Configuração"',
+      '3. Em "Nome", escreva "Sentinela"',
+      '4. Deixe Secret como "Padrão"',
+      '5. Em "URL para envio dos dados", cole a URL do webhook abaixo (sem parâmetros)',
+      '6. Clique em "Verificar URL"',
+      '7. No final da página, clique em "MyEduzz" e selecione os 4 eventos: "Fatura Paga", "Fatura reembolsada", "Fatura expirada", "Fatura cancelada"',
+      '8. Clique em "Criar configuração" e ative-a',
+      '9. Na coluna da esquerda, clique em "Chaves de acesso" e copie a chave (a padrão funciona)',
+      '10. Cole a chave no campo abaixo',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  mundpay: {
+    name: 'Mundpay',
+    description: 'Checkout de pagamentos (URL com token)',
+    color: 'bg-foreground/15',
+    webhookPath: 'webhook-mundpay',
+    tokenLabel: 'Token do Webhook',
+    tokenHelp: 'A Mundpay não permite headers customizados. Use o botão "Gerar token" e cole a URL completa (já com ?token=...) no campo "Webhook URL" da Mundpay.',
+    supportsGeneratedToken: true,
+    tokenInUrl: true,
+    instructions: [
+      '⚠️ ATENÇÃO: a Mundpay autentica via token na URL (parâmetro ?token=...). Use o botão "Gerar token" abaixo e cole a URL completa abaixo no campo "Webhook URL" da Mundpay.',
+      '1. Aqui no Sentinela, clique em "Gerar token" para criar um token aleatório',
+      '2. Copie a URL exibida abaixo (já com ?token=...) — você vai colar essa URL completa na Mundpay',
+      '3. Na página inicial da Mundpay, clique em "Integrações" no canto superior direito',
+      '4. Clique em "Webhooks" e depois em "Adicionar"',
+      '5. Em "Título", escreva "Sentinela"',
+      '6. Em "Webhook URL", cole a URL COMPLETA (com o ?token=... no final)',
+      '7. Em produtos, selecione todos',
+      '8. Selecione todos os métodos de pagamentos',
+      '9. Em "Status do Pagamento", selecione "Pago", "Reembolsado" e "Chargeback"',
+      '10. Salve na Mundpay',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  monetizze: {
+    name: 'Monetizze',
+    description: 'Plataforma de afiliados e infoprodutos',
+    color: 'bg-foreground/10',
+    webhookPath: 'webhook-monetizze',
+    tokenLabel: 'Chave Única',
+    tokenHelp: 'Na Monetizze, copie a Chave Única exibida na tela de Postback após salvar.',
+    instructions: [
+      '1. No menu lateral da Monetizze, clique em "Ferramentas" e depois em "Postback"',
+      '2. Mantenha "Todos os produtos"',
+      '3. Mantenha "Postback (server to server)"',
+      '4. Em "URL", cole a URL do webhook abaixo (sem parâmetros)',
+      '5. Salve o postback na Monetizze',
+      '6. Copie a "Chave Única" exibida e cole no campo abaixo',
+      '7. Eventos processados automaticamente: "Aprovada", "Completa", "Cancelada", "Devolvida (Reembolso)" e eventos de assinatura (102/103)',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+  greenn: {
+    name: 'Greenn',
+    description: 'Plataforma de infoprodutos (integração por produto)',
+    color: 'bg-foreground/20',
+    webhookPath: 'webhook-greenn',
+    tokenLabel: 'Webhook Token',
+    tokenHelp: 'Na Greenn, copie o Webhook Token em "Sistema > Tokens e API Key".',
+    instructions: [
+      '⚠️ ATENÇÃO: a Greenn exige configurar o webhook em CADA produto. Crie uma integração separada no Sentinela para cada produto se quiser nomes distintos (opcional — o token global serve para todos).',
+      '1. Na coluna da esquerda da Greenn, clique em "Meus Produtos"',
+      '2. Clique na engrenagem do produto e em "Editar Produto"',
+      '3. Vá em "Conteúdos" > "Adicionar conteúdo" > "Sistema externo" > "Webhooks"',
+      '4. Em Eventos, selecione: "Venda Paga", "Venda Reembolsada", "Chargeback realizado" e todos os eventos de assinatura',
+      '5. Em URL, cole a URL do webhook abaixo (sem parâmetros)',
+      '6. Salve o webhook na Greenn',
+      '7. Volte ao menu lateral e desça até "Sistema" > "Tokens e API Key"',
+      '8. Copie o "Webhook Token" e cole no campo abaixo',
+      '🔁 Repita os passos 2-6 para cada produto que deseja rastrear (o token é o mesmo)',
+      '💡 Para rastrear vendas do Facebook Ads, adicione ao link de checkout: ?utm_content={{ad.id}}',
+    ],
+  },
+};

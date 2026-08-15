@@ -1,0 +1,70 @@
+{
+  "type": "subscription.activated",
+  "event": {
+    "product": {
+      "id": "inAVzweR0QYw5y03K5mq",
+      "name": "Integrações com Webhook 2.0"
+    },
+    "products": [{
+      "id": "inAVzweR0QYw5y03K5mq",
+      "name": "Integrações com Webhook 2.0",
+      "offers": [{
+        "id": "inAVzweR0QYw5y03K5mq",
+        "name": "Principal",
+        "cohorts": [{ "id": "3a96c85e-cf82-4236-b242-7431f405c521" }]
+      }]
+    }],
+    "subscription": {
+      "id": "d7ab5027-5bca-476c-ac29-68f1359ee6ca",
+      "sellerId": "onVILjt4hEhXIdCrvCXBUpcBuvk2",
+      "payerId": "J0kmLJmCj1TO4m3pqW0GDlEjROQ2",
+      "type": "recurring",
+      "status": "active",
+      "billingCycleMonths": 12,
+      "paymentMethod": "credit_card",
+      "autoRenew": true,
+      "freeTrial": false,
+      "activatedAt": "2024-03-28T20:35:33.606Z",
+      "lastInvoice": {
+        "id": "7614b1bb-1d1a-43ba-890c-50d74216eb56",
+        "subscriptionId": "d7ab5027-5bca-476c-ac29-68f1359ee6ca",
+        "paymentMethod": "credit_card",
+        "currency": "BRL",
+        "type": "sell",
+        "status": "paid",
+        "amount": {
+          "subtotalCents": 120000,
+          "discountCents": 24000,
+          "prorataCents": 0,
+          "installmentFeeCents": 16320,
+          "totalCents": 112320
+        },
+        "saleDate": "2024-03-28T20:35:33.512Z"
+      },
+      "firstPaymentSession": {
+        "ip": "220.172.165.140",
+        "utm": {
+          "source": "email",
+          "medium": "active-campaign",
+          "campaign": "[LEAD][QUENTE][24][MAR]",
+          "content": "2024032812H",
+          "term": "PROMO10OFF"
+        }
+      },
+      "billingAddress": {
+        "countryCode": "BR",
+        "state": "São Paulo",
+        "city": "São Paulo"
+      }
+    },
+    "user": {
+      "id": "J0kmLJmCj1TO4m3pqW0GDlEjROQ2",
+      "firstName": "John",
+      "lastName": "Doe",
+      "document": "08351973955",
+      "email": "john.doe@hub.la",
+      "phone": "+5511988646782"
+    }
+  },
+  "version": "2.0.0"
+}

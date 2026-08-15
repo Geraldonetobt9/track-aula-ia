@@ -1,0 +1,167 @@
+{
+    "item": {
+        "amount": 2700,
+        "offer_id": 146454,
+        "quantity": 1,
+        "coupon_id": null,
+        "offer_code": "OB6432F6C",
+        "offer_name": "27",
+        "product_id": 100220,
+        "trial_days": null,
+        "coupon_name": null,
+        "coupon_value": null,
+        "product_name": "ShapeMax Dance",
+        "days_of_access": null,
+        "refund_deadline": 7,
+        "members_portal_id": 20193,
+        "members_classroom_id": 40030
+    },
+    "bumps": [
+        {
+            "offer_id": 146458,
+            "offer_code": "OC9ED6CDC",
+            "offer_name": "GRATÍS",
+            "product_id": 100229,
+            "offer_price": "0.00",
+            "product_name": "Seca Bucho Dance",
+            "refund_deadline": 7,
+            "product_support_email": "shapemaxdance@gmail.com",
+            "product_support_phone": "31993726469"
+        }
+    ],
+    "offer": {
+        "id": 146454,
+        "code": "OB6432F6C",
+        "name": "27",
+        "price": 2700,
+        "interval": null,
+        "trial_days": null,
+        "description": "Emagreça dançando em casa com o plano de 21 dias 🔥💃",
+        "is_subscription": false,
+        "first_charge_price": null
+    },
+    "order": {
+        "id": 3704259,
+        "hash": "TOCDA14128010VL8FS",
+        "order_date": "2026-01-28 15:06:43",
+        "paid_amount": 2700,
+        "installments": 1,
+        "transaction_hash": "TPC1B21E2801NBJ96TQR"
+    },
+    "token": "jYx7aDvL6IQkAVq3saLwEolcuZIg4RuxRUrLmqh440tZhIHnLH7dYcVWEeiMAdcvPTJliZBrv5mmhB3ikpYfLJTEY1I6VqJFPMZJ",
+    "status": "authorized",
+    "version": "2.0",
+    "customer": {
+        "cpf": "00101501293",
+        "cnpj": null,
+        "code": "VTVLMPPJPP1769623598",
+        "name": "Karina Sales Coronel",
+        "type": "person",
+        "email": "karinasalescoronel@gmail.com",
+        "phone": {
+            "ddd": "68",
+            "ddi": "+55",
+            "number": "999809233"
+        },
+        "phones": [
+            {
+                "id": 2399994,
+                "ddd": "68",
+                "ddi": "+55",
+                "type": null,
+                "number": "999809233",
+                "user_id": 3155782,
+                "created_at": "28/01/2026 15:06:41",
+                "deleted_at": null,
+                "updated_at": "28/01/2026 15:06:41"
+            }
+        ],
+        "language": "pt-BR",
+        "is_foreign": false
+    },
+    "producer": {
+        "id": 227194,
+        "cms": "24.51",
+        "pid": "",
+        "name": "BORGOV AGENCIA LTDA",
+        "email": "davinielneves@gmail.com",
+        "phone": "5431993038021",
+        "amount": 2451,
+        "document": "54969235000115"
+    },
+    "shipping": {
+        "type": null,
+        "amount": 0,
+        "method": null,
+        "delivery_days": null
+    },
+    "telefone": "68999809233",
+    "tracking": {
+        "sck": "Não Informado",
+        "src": "Não Informado",
+        "event": "PageView",
+        "utm_term": "Instagram_Stories",
+        "utm_medium": "Advantage+|120237588675040278",
+        "utm_source": "FBjLj697a4e2ef0de182802807153",
+        "utm_content": "AD346|120237588708440278::PAZXh0bgNhZW0BMABhZGlkAasrcy_uTkZzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAadmjLvEmPTzcmceezqADOne0foHEbsCUuKdRhSjSf14cr7FZNqL2ys5MXLdYg_aem_4cTKbiZZhQ9IpSOT4r2bcA::",
+        "utm_campaign": "$ Campanha PRIME | 27.01|120237588675030278",
+        "manychat_user_id": "Não Informado"
+    },
+    "affiliates": [],
+    "coproducers": [],
+    "status_date": "2026-01-28 15:06:48",
+    "transaction": {
+        "hash": "TPC1B21E2801NBJ96TQR",
+        "cards": [
+            {
+                "brand": "elo",
+                "holder": "APARECIDA MS CORONEL",
+                "last_digits": "0871",
+                "first_digits": "650507"
+            }
+        ]
+    },
+    "checkout_url": "https://checkout.ticto.app/OB6432F6C",
+    "query_params": {
+        "_gl": null,
+        "fbc": "fb.1.1769623376965.PAZXh0bgNhZW0CMTAAc3J0YwZhcHBfaWQPNTY3MDY3MzQzMzUyNDI3AAGndLtAvPhriUMqvt2Tj-Cia02po-THgEx-HE8I_xbsOelqHMz5L-s6BYi9gPs_aem_s6Xw1ap5I72op-JpnU8Xtw",
+        "fbp": "fb.1.1769623376827.7285403682066582",
+        "code": "OB6432F6C",
+        "event": "PageView",
+        "fbclid": null,
+        "currency": "BRL",
+        "utm_term": "Instagram_Stories",
+        "offer_code": "OB6432F6C",
+        "product_id": "100220",
+        "utm_medium": "Advantage+|120237588675040278",
+        "utm_source": "FBjLj697a4e2ef0de182802807153",
+        "visitor_id": "ccb7b791-9e73-4339-a1bc-ec7f524c70ca",
+        "fingerprint": "ccb7b791-9e73-4339-a1bc-ec7f524c70ca",
+        "utm_content": "AD346|120237588708440278::PAZXh0bgNhZW0BMABhZGlkAasrcy_uTkZzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAadmjLvEmPTzcmceezqADOne0foHEbsCUuKdRhSjSf14cr7FZNqL2ys5MXLdYg_aem_4cTKbiZZhQ9IpSOT4r2bcA::",
+        "utm_campaign": "$ Campanha PRIME | 27.01|120237588675030278",
+        "payment_method": "credit_card"
+    },
+    "payment_method": "credit_card",
+    "commission_type": "producer",
+    "owner_commissions": [
+        {
+            "offer_id": 146454,
+            "offer_code": "OB6432F6C",
+            "offer_name": "27",
+            "product_id": 100220,
+            "product_name": "ShapeMax Dance",
+            "commission_amount": 2451
+        },
+        {
+            "offer_id": 146458,
+            "offer_code": "OC9ED6CDC",
+            "offer_name": "GRATÍS",
+            "product_id": 100229,
+            "product_name": "Seca Bucho Dance",
+            "commission_amount": 0
+        }
+    ],
+    "phone_number_customer": "68999809233",
+    "marketplace_commission": 149,
+    "phone_local_code_customer": ""
+}

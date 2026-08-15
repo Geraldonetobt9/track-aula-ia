@@ -1,0 +1,176 @@
+{
+    "id": "a0f24447-a369-465c-8717-c451567644e2",
+    "type": "producer",
+    "dates": {
+        "created_at": "2026-01-28T18:12:16Z",
+        "expires_at": null,
+        "ordered_at": "2026-01-28T18:11:20Z",
+        "updated_at": "2026-01-28T18:17:41Z",
+        "canceled_at": null,
+        "confirmed_at": "2026-01-28T18:15:49Z",
+        "warranty_until": "2026-02-27T18:15:49Z",
+        "unavailable_until": "2026-02-27T18:15:49Z"
+    },
+    "items": [
+        {
+            "id": "1757098300",
+            "qty": 1,
+            "name": "(D) DRH Box 3 Livros Digitais: Guia da Desinflamação, Descomplicando o Cardápio de Jejum Intermitente e Salada Todo Dia",
+            "type": "product",
+            "offer": {
+                "id": "9fcea254-f6f0-4762-b26a-2f1104179490",
+                "name": "7 Dias De Protocolo Guiado"
+            },
+            "producer": {
+                "name": "Vida Mais Natura",
+                "contact_email": null,
+                "marketplace_id": "1648049844"
+            },
+            "image_url": "https://storage.googleapis.com/disk.clkdmg.site/clients/95e3a68c-f58f-4800-9a6c-c8dfdd834fa5/images/offers/9fd602b5-fcaf-420a-b672-bd2b29d24888.png",
+            "unit_value": 49.9,
+            "internal_id": "9fcea201-0cb5-42fe-a7d3-4c2e64bd7ffc",
+            "total_value": 49.9,
+            "marketplace_id": "1757098300",
+            "marketplace_name": "pagarme2"
+        }
+    ],
+    "extras": {
+        "accepted_terms_url": 0,
+        "accepted_privacy_policy_url": 0
+    },
+    "source": {
+        "pptc": [],
+        "source": null,
+        "utm_term": null,
+        "utm_medium": "social",
+        "utm_source": "ig",
+        "utm_content": "link_in_bio",
+        "utm_campaign": "bio_link_ne",
+        "checkout_source": null
+    },
+    "status": "approved",
+    "contact": {
+        "id": "a0f2449d-1b77-4f40-9c0b-6f735da5b6c6",
+        "doc": "89193164068",
+        "lead": [],
+        "name": "Marilene Ferreira Cassol",
+        "email": "lenecassol@hotmail.com",
+        "address": "Rua Piratuba",
+        "address_city": "Francisco Beltrão",
+        "address_comp": "",
+        "company_name": "",
+        "phone_number": "46999702693",
+        "address_state": "PR",
+        "address_number": "340",
+        "address_country": "BR",
+        "address_district": "Jardim Floresta",
+        "address_zip_code": "85603780",
+        "phone_local_code": "55",
+        "address_state_full_name": "PR"
+    },
+    "invoice": [],
+    "payment": {
+        "net": 42.98,
+        "tax": {
+            "rate": 0,
+            "value": 0
+        },
+        "gross": 49.9,
+        "total": 49.92,
+        "coupon": null,
+        "method": "credit_card",
+        "acquirer": {
+            "nsu": "4260106820",
+            "tid": "4260106820",
+            "code": "0000",
+            "name": "pagarme",
+            "message": "Transação aprovada com sucesso"
+        },
+        "currency": "BRL",
+        "credit_card": {
+            "id": "card_mYbaoZ1uegInLJyw",
+            "brand": "mastercard",
+            "last_digits": "2624",
+            "first_digits": "550209",
+            "expiration_year": 2030,
+            "expiration_month": 11
+        },
+        "installments": {
+            "qty": 12,
+            "value": 4.16,
+            "interest": 0.02
+        },
+        "can_try_again": 1,
+        "refund_reason": "",
+        "refuse_reason": "Transação aprovada com sucesso (0000)",
+        "discount_value": 0,
+        "marketplace_id": "ch_zv5yg6BIJsz3qG3b",
+        "affiliate_value": 0,
+        "marketplace_name": "pagarme2",
+        "processing_times": {
+            "started_at": "2026-01-28T18:15:38.312Z",
+            "finished_at": "2026-01-28T18:15:49.208Z",
+            "delay_in_seconds": 10
+        },
+        "marketplace_value": 6.94
+    },
+    "product": {
+        "id": "1757098300",
+        "qty": 1,
+        "name": "(D) DRH Box 3 Livros Digitais: Guia da Desinflamação, Descomplicando o Cardápio de Jejum Intermitente e Salada Todo Dia",
+        "type": "product",
+        "group": {
+            "id": "a03a52de-4415-4702-ba06-f829fc5fe718",
+            "name": "FRONT-JIN"
+        },
+        "offer": {
+            "id": "9fcea254-f6f0-4762-b26a-2f1104179490",
+            "name": "7 Dias De Protocolo Guiado"
+        },
+        "producer": {
+            "name": "Vida Mais Natura",
+            "contact_email": "",
+            "marketplace_id": "1648049844"
+        },
+        "image_url": "https://storage.googleapis.com/disk.clkdmg.site/clients/95e3a68c-f58f-4800-9a6c-c8dfdd834fa5/images/offers/9fd602b5-fcaf-420a-b672-bd2b29d24888.png",
+        "unit_value": 49.9,
+        "internal_id": "9fcea201-0cb5-42fe-a7d3-4c2e64bd7ffc",
+        "total_value": 49.9,
+        "marketplace_id": "1757098300",
+        "marketplace_name": "pagarme2"
+    },
+    "shipment": {
+        "value": 0,
+        "status": "",
+        "carrier": "",
+        "service": "",
+        "tracking": "",
+        "delivery_time": ""
+    },
+    "shipping": {
+        "name": " - ",
+        "value": 0
+    },
+    "api_token": "8PNTn9tGufXcQZVErwzReVZZJNgzE93fg52CTo1K",
+    "contracts": [],
+    "ecommerces": [],
+    "is_reissue": 0,
+    "affiliations": [],
+    "checkout_url": "https://go.vidamaisnatura.com.br/pay/desafio-jejum",
+    "subscription": [],
+    "webhook_type": "transaction",
+    "is_order_bump": 0,
+    "infrastructure": {
+        "ip": "187.60.219.144",
+        "city": "francisco beltrao",
+        "host": "go.vidamaisnatura.com.br",
+        "ga_id": "",
+        "region": "pr",
+        "country": "BR",
+        "user_agent": "Mozilla/5.0 (Linux; Android 15; SM-A266M Build/AP3A.240905.015.A2; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/144.0.7559.59 Mobile Safari/537.36 Instagram 413.0.0.41.84 Android (35/15; 450dpi; 1080x2340; samsung; SM-A266M; a26xs; s5e8825; pt_BR; 865356627; IABMV/1)",
+        "city_lat_long": "-26.081118,-53.053138",
+        "facebook_browser_id": "fb.2.1769623519990.591626551331122130"
+    },
+    "last_transaction": [],
+    "self_attribution": null
+}

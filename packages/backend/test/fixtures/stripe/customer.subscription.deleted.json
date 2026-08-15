@@ -1,0 +1,26 @@
+{
+  "id": "evt_sub_deleted_1",
+  "object": "event",
+  "api_version": "2025-02-24.acacia",
+  "created": 1745280000,
+  "type": "customer.subscription.deleted",
+  "livemode": false,
+  "data": {
+    "object": {
+      "id": "sub_fixture_1",
+      "object": "subscription",
+      "customer": "cus_fixture_1",
+      "status": "canceled",
+      "cancel_at_period_end": false,
+      "items": {
+        "object": "list",
+        "data": [
+          {
+            "id": "si_fixture_base",
+            "price": { "id": "price_base_pro", "recurring": { "usage_type": "licensed" } }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,117 @@
+{
+    "id": "8e848577-cd94-46fe-aa8b-4d096b217829",
+    "fbc": "fb.2.1769624718994.PAZXh0bgNhZW0BMABhZGlkAasuE3Os8LxzcnRjBmFwcF9pZA8xMjQwMjQ1NzQyODc0MTQAAacbkmUOP0Evo_n6mzw1AVZFeTWifyAZHBAZzo5LDxSYwlYSaDZ9opiDCyI7kw_aem_28nnbPSQq5ARlXtPrdBFAg",
+    "fbp": "fb.2.1769624718997.561038580329636191",
+    "pix": {
+        "qrCode": "00020101021226850014br.gov.bcb.pix2563qrcodepix.bb.com.br/pix/v2/8af3c934-c5cc-4386-ac5b-6f45af4fb5a55204000053039865406197.995802BR5914CAKTO PAY LTDA6015BALNEARIO CAMBO62070503***630409EB",
+        "user_journey": null,
+        "expirationDate": "2026-01-29 18:27:52.117334+00:00"
+    },
+    "sck": "ighQwK21wXxR120240476103010092hQwK21wXxRpaidhQwK21wXxR120240476103080092hQwK21wXxR120240476103090092",
+    "fees": 2.49,
+    "offer": {
+        "id": "bk5eok9",
+        "name": "Plataforma Produção Lucrativa",
+        "image": null,
+        "price": 197
+    },
+    "refId": "zls276N",
+    "amount": 197.99,
+    "paidAt": "2026-01-28T15:28:26.385473-03:00",
+    "reason": null,
+    "status": "paid",
+    "address": null,
+    "product": {
+        "id": "796d4ecf-7e54-4651-97d6-a7b6e226bc0f",
+        "name": "Plataforma Produção Lucrativa - ANUAL",
+        "type": "subscription",
+        "short_id": "7QoXSjC",
+        "supportEmail": "christianalvescursos@gmail.com",
+        "invoiceDescription": ""
+    },
+    "checkout": 635306,
+    "customer": {
+        "name": "Eliane Vieira",
+        "email": "eliane.rayssa36@gmail.com",
+        "phone": "5531994420039",
+        "docType": "cpf",
+        "birthDate": null,
+        "docNumber": "05521006680"
+    },
+    "discount": "0.00",
+    "due_date": null,
+    "shipping": null,
+    "utm_term": "120240476103090092",
+    "affiliate": "",
+    "createdAt": "2026-01-28T15:27:45.822183-03:00",
+    "baseAmount": 197,
+    "canceledAt": null,
+    "couponCode": null,
+    "offer_type": "main",
+    "refundedAt": null,
+    "utm_medium": "paid",
+    "utm_source": "ig",
+    "checkoutUrl": "https://pay.cakto.com.br/bk5eok9?utm_source=ig&utm_campaign=120240476103010092&utm_medium=paid&utm_content=120240476103080092%3A%3APAZXh0bgNhZW0BMABhZGlkAasuE3Os8LxzcnRjBmFwcF9pZA8xMjQwMjQ1NzQyODc0MTQAAacbkmUOP0Evo_n6mzw1AVZFeTWifyAZHBAZzo5LDxSYwlYSaDZ9opiDCyI7kw_aem_28nnbPSQq5ARlXtPrdBFAg%3A%3A&utm_term=120240476103090092&xcod=ighQwK21wXxR120240476103010092hQwK21wXxRpaidhQwK21wXxR120240476103080092hQwK21wXxR120240476103090092&sck=ighQwK21wXxR120240476103010092hQwK21wXxRpaidhQwK21wXxR120240476103080092hQwK21wXxR120240476103090092&fbclid=PAZXh0bgNhZW0BMABhZGlkAasuE3Os8LxzcnRjBmFwcF9pZA8xMjQwMjQ1NzQyODc0MTQAAacbkmUOP0Evo_n6mzw1AVZFeTWifyAZHBAZzo5LDxSYwlYSaDZ9opiDCyI7kw_aem_28nnbPSQq5ARlXtPrdBFAg&utm_id=120240476103010092",
+    "commissions": [
+        {
+            "type": "producer",
+            "user": "christianalves990@gmail.com",
+            "percentage": 50,
+            "totalAmount": 97.25
+        },
+        {
+            "type": "coproducer",
+            "user": "fjsmidia22@gmail.com",
+            "percentage": 25,
+            "totalAmount": 48.63
+        },
+        {
+            "type": "coproducer",
+            "user": "fabriciojsantos16@gmail.com",
+            "percentage": 25,
+            "totalAmount": 48.63
+        }
+    ],
+    "utm_content": "120240476103080092::PAZXh0bgNhZW0BMABhZGlkAasuE3Os8LxzcnRjBmFwcF9pZA8xMjQwMjQ1NzQyODc0MTQAAacbkmUOP0Evo_n6mzw1AVZFeTWifyAZHBAZzo5LDxSYwlYSaDZ9opiDCyI7kw_aem_28nnbPSQq5ARlXtPrdBFAg::",
+    "installments": 1,
+    "parent_order": "",
+    "subscription": {
+        "id": "c5882f42-62fd-43ae-97e8-937cc1812e31",
+        "offer": "bk5eok9",
+        "amount": "197.00",
+        "orders": [
+            "114741ce-6b7f-419b-a17f-62a0019e5cb0",
+            "8e848577-cd94-46fe-aa8b-4d096b217829"
+        ],
+        "status": "active",
+        "product": "796d4ecf-7e54-4651-97d6-a7b6e226bc0f",
+        "customer": {
+            "name": "Eliane Vieira",
+            "email": "eliane.rayssa36@gmail.com",
+            "phone": "5531994420039",
+            "docType": "cpf",
+            "birthDate": null,
+            "docNumber": "05521006680"
+        },
+        "createdAt": "2026-01-28T15:27:53.705544-03:00",
+        "retention": "00:00:00",
+        "updatedAt": "2026-01-28T15:28:31.938141-03:00",
+        "canceledAt": null,
+        "trial_days": 365,
+        "max_retries": 3,
+        "parent_order": "8e848577-cd94-46fe-aa8b-4d096b217829",
+        "paymentMethod": "pix",
+        "current_period": 0,
+        "retry_interval": 1,
+        "next_payment_date": "2027-01-28T15:28:31.749275-03:00",
+        "recurrence_period": 365,
+        "quantity_recurrences": 0,
+        "paid_payments_quantity": 0
+    },
+    "utm_campaign": "120240476103010092",
+    "chargedbackAt": null,
+    "paymentMethod": "pix",
+    "refund_reason": null,
+    "paymentMethodName": "PIX",
+    "subscription_period": 1
+}

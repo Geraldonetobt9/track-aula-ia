@@ -1,0 +1,43 @@
+{
+  "event": "order.paid",
+  "order": {
+    "id": 12345678,
+    "email": "cliente@example.com",
+    "created_at": "2026-04-01 14:30:00",
+    "total_price": "32.80",
+    "currency": "BRL",
+    "payment": {
+      "amount": 32.8,
+      "seller_split_amount": 32.48,
+      "cartpanda_pay_split_amount": 0.32,
+      "split_fee": "seller",
+      "type": "pix",
+      "payment_type": "pix",
+      "gateway": "cartpanda_pay",
+      "currency": "BRL"
+    },
+    "customer": {
+      "id": 9876543,
+      "email": "cliente@example.com",
+      "full_name": "João da Silva",
+      "cpf": "123.456.789-00",
+      "phone": "+5511999998888"
+    },
+    "line_items": [
+      {
+        "id": 1001,
+        "name": "Curso de Marketing Digital",
+        "title": "Curso de Marketing Digital",
+        "price": "32.80",
+        "quantity": 1
+      }
+    ],
+    "tracking_parameters": [
+      { "parameter_name": "utm_source", "parameter_value": "facebook" },
+      { "parameter_name": "utm_medium", "parameter_value": "cpc" },
+      { "parameter_name": "utm_campaign", "parameter_value": "campanha_vendas" },
+      { "parameter_name": "utm_content", "parameter_value": "ad_123456" },
+      { "parameter_name": "utm_term", "parameter_value": "marketing" }
+    ]
+  }
+}

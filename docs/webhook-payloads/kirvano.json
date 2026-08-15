@@ -1,0 +1,91 @@
+{
+    "ip": "2804:388:9042:1e23:0:6b:2f02:501",
+    "fee": 4.78,
+    "utm": {
+        "src": "1769609570880",
+        "utm_term": "120236181571540300",
+        "utm_medium": "paid",
+        "utm_source": "ig",
+        "utm_content": "120236181592440300",
+        "utm_campaign": "120236181571550300"
+    },
+    "type": "ONE_TIME",
+    "event": "SALE_APPROVED",
+    "fiscal": {
+        "fee": 4.78,
+        "net_value": 56.9,
+        "commission": 52.12,
+        "total_value": 56.9,
+        "original_value": 56.9,
+        "coupon_discount": 0,
+        "total_discounts": 0,
+        "total_commissions": 52.12,
+        "automatic_discount": 0,
+        "affiliate_commission": 0,
+        "coproduction_commission": 0
+    },
+    "status": "APPROVED",
+    "cookies": {
+        "fbclid": "PAZXh0bgNhZW0BMABhZGlkAasrWYplVBpzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafQ0uTfdX_5VJiOY73tpFBsHzbaFqHfPfBtr2CpO72yRXQelHBi2_BVdW869g_aem_FzwuuzElXIDKSzQUWKBhew"
+    },
+    "payment": {
+        "method": "PIX",
+        "qrcode": "00020101021226820014br.gov.bcb.pix2560qrcode.pinbank.com.br/qr/v2/C212B26580B7F19CDF5EE39C0277833E5204000053039865802BR5914KIRVANO PAGAME6007BARUERI62070503***630438F9",
+        "expires_at": "2026-01-29 14:42:13",
+        "finished_at": "2026-01-28 14:45:03",
+        "qrcode_image": "00020101021226820014br.gov.bcb.pix2560qrcode.pinbank.com.br/qr/v2/C212B26580B7F19CDF5EE39C0277833E5204000053039865802BR5914KIRVANO PAGAME6007BARUERI62070503***630438F9"
+    },
+    "sale_id": "5MV9R7Y9",
+    "customer": {
+        "name": "André Batista",
+        "email": "apkjp001@gmail.com",
+        "address": {
+            "city": null,
+            "state": null,
+            "number": null,
+            "street": null,
+            "zipcode": null,
+            "complement": null,
+            "neighborhood": null
+        },
+        "document": "80592848353",
+        "phone_number": "5521975899095"
+    },
+    "products": [
+        {
+            "id": "c76e47dd-f9ce-427b-8829-e1bfb4c1161c",
+            "name": "23 Técnicas para Fazer Ela Ter um Squirt",
+            "photo": "products/c76e47dd-f9ce-427b-8829-e1bfb4c1161c/cover-1763945476827.webp",
+            "price": "R$ 37,00",
+            "format": "file",
+            "category": "99ebcc9e-d497-4191-96f7-507d6f76dd99",
+            "offer_id": "d46a73e1-c990-4b7a-86bc-27bbcad565a7",
+            "offer_name": "3700",
+            "description": "23 Técnicas para Fazer Ela Ter um Squirt",
+            "is_order_bump": false
+        },
+        {
+            "id": "968862d5-e41a-40e7-9d03-25598b641f75",
+            "name": "A Técnica Oral que Faz Ela Tremer em 60 Segundos!",
+            "photo": "products/968862d5-e41a-40e7-9d03-25598b641f75/cover-1764374796786.webp",
+            "price": "R$ 19,90",
+            "format": "community",
+            "category": "99ebcc9e-d497-4191-96f7-507d6f76dd99",
+            "offer_id": "1a5c6a1a-e8e4-45d7-8926-89ab92b35f95",
+            "offer_name": "1990",
+            "description": "Potencialize o efeito das suas mãos usando sua língua do jeito certo. Esqueça o alfabeto: aprenda o movimento de sucção e varredura que ataca diretamente o clitóris e acelera o orgasmo dela em 3x. Tor",
+            "is_order_bump": true
+        }
+    ],
+    "commission": 52.12,
+    "created_at": "2026-01-28 14:45:03",
+    "checkout_id": "5LMPKD1V",
+    "total_price": "R$ 56,90",
+    "contactEmail": "agcdigitalsuporte@gmail.com",
+    "couponDiscount": 0,
+    "payment_method": "PIX",
+    "automaticDiscount": 0,
+    "event_description": "Compra aprovada",
+    "affiliateCommission": 0,
+    "coproductionCommission": 0
+}

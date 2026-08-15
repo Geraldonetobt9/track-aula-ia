@@ -1,0 +1,16 @@
+{
+  "id": "evt_unknown_type_1",
+  "object": "event",
+  "api_version": "2025-02-24.acacia",
+  "created": 1745280000,
+  "type": "payment_intent.succeeded",
+  "livemode": false,
+  "data": {
+    "object": {
+      "id": "pi_fixture_1",
+      "object": "payment_intent",
+      "amount": 5990,
+      "status": "succeeded"
+    }
+  }
+}

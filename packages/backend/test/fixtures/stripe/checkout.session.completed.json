@@ -1,0 +1,20 @@
+{
+  "id": "evt_checkout_session_completed_1",
+  "object": "event",
+  "api_version": "2025-02-24.acacia",
+  "created": 1745280000,
+  "type": "checkout.session.completed",
+  "livemode": false,
+  "data": {
+    "object": {
+      "id": "cs_test_a1b2c3",
+      "object": "checkout.session",
+      "customer": "cus_fixture_1",
+      "subscription": "sub_fixture_1",
+      "payment_status": "paid",
+      "status": "complete",
+      "mode": "subscription",
+      "metadata": { "user_id": "user-fixture-1", "plan_id": "plan-pro-id" }
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+    "event": "pix.paid",
+    "params": {
+        "sck": null,
+        "src": null,
+        "gclid": null,
+        "utm_term": null,
+        "utm_medium": null,
+        "utm_source": null,
+        "utm_content": null,
+        "utm_campaign": null
+    },
+    "payment": {
+        "id": "1774225321930bpc415igpe6aa",
+        "amount": 7.66,
+        "method": "pix.paid",
+        "status": "paid",
+        "gateway": null,
+        "pixCode": "00020101021226830014BR.GOV.BCB.PIX...",
+        "paymentMethod": "pix"
+    },
+    "product": {
+        "id": "k3MiqktHo7C9RtMXP4aZ",
+        "type": "main",
+        "title": "O Segredo do Pompoarismo"
+    },
+    "webhook": {
+        "id": "vFquxKREpg1YUPzLupDE",
+        "events": ["card.paid", "pix.paid", "card.refunded", "pix.refunded"],
+        "businessId": "GU6Ne8PvzEhUNCZN3GWkJBrNtl13"
+    },
+    "customer": {
+        "ip": "172.69.138.16",
+        "name": "marcia silva",
+        "email": "marciairacema18@gmail.com",
+        "phone": "5519978062145",
+        "document": "***.582.138-**"
+    },
+    "products": [
+        {
+            "id": "k3MiqktHo7C9RtMXP4aZ",
+            "type": "main",
+            "title": "O Segredo do Pompoarismo"
+        }
+    ],
+    "createdAt": {
+        "_seconds": 1774225374,
+        "_nanoseconds": 76000000
+    }
+}

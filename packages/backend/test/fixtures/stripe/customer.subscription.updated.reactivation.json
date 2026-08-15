@@ -1,0 +1,29 @@
+{
+  "id": "evt_sub_updated_reactivation_1",
+  "object": "event",
+  "api_version": "2025-02-24.acacia",
+  "created": 1745280000,
+  "type": "customer.subscription.updated",
+  "livemode": false,
+  "data": {
+    "object": {
+      "id": "sub_fixture_1",
+      "object": "subscription",
+      "customer": "cus_fixture_1",
+      "status": "active",
+      "cancel_at_period_end": false,
+      "items": {
+        "object": "list",
+        "data": [
+          {
+            "id": "si_fixture_base",
+            "price": { "id": "price_base_pro", "recurring": { "usage_type": "licensed" } },
+            "current_period_start": 1745280000,
+            "current_period_end": 1747872000
+          }
+        ]
+      }
+    },
+    "previous_attributes": { "cancel_at_period_end": true }
+  }
+}

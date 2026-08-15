@@ -1,0 +1,73 @@
+{
+    "Product": {
+        "product_id": "842ed180-c5a2-11f0-bef1-6f3d5c6f9a5b",
+        "product_name": "Programa Árvores Frutíferas"
+    },
+    "Customer": {
+        "ip": "45.65.158.93",
+        "CPF": "81256949787",
+        "cnpj": null,
+        "email": "rittaleal@hotmail.com",
+        "mobile": "+5521990714338",
+        "country": "br",
+        "full_name": "Rita Leal Carvalho",
+        "instagram": null,
+        "first_name": "Rita"
+    },
+    "order_id": "2cdd8c6a-7733-437f-acbe-ee6fa6f477c0",
+    "pix_code": null,
+    "store_id": "e8DWy7PPGsII9DR",
+    "card_type": null,
+    "order_ref": "KVyIyhI",
+    "sale_type": "producer",
+    "access_url": null,
+    "created_at": "2026-01-28 13:22",
+    "updated_at": "2026-01-28 13:22",
+    "Commissions": {
+        "currency": "BRL",
+        "kiwify_fee": 1571,
+        "deposit_date": null,
+        "funds_status": "waiting",
+        "charge_amount": 14700,
+        "my_commission": 13129,
+        "product_base_price": 14700,
+        "commissioned_stores": [
+            {
+                "id": "d4e16bc5-3fd2-4b9f-9b69-ae76f8d5c96a",
+                "type": "producer",
+                "email": "luizzeduardo.contato@gmail.com",
+                "value": "13129",
+                "custom_name": "ICON DIGITAL LTDA"
+            }
+        ],
+        "kiwify_fee_currency": "BRL",
+        "estimated_deposit_date": "2026-01-30T03:00:00.000Z",
+        "product_base_price_currency": "BRL"
+    },
+    "refunded_at": null,
+    "installments": 1,
+    "order_status": "paid",
+    "product_type": "payment",
+    "approved_date": "2026-01-28 13:28",
+    "checkout_link": "dQYe000",
+    "boleto_barcode": null,
+    "payment_method": "pix",
+    "pix_expiration": null,
+    "card_last4digits": null,
+    "TrackingParameters": {
+        "s1": null,
+        "s2": null,
+        "s3": null,
+        "sck": "v3_e2b21488-2c45-4463-9b81-e991fbbd8049_6977b610ff8bb56335474f4c_1730_h-6_s-1",
+        "src": null,
+        "utm_term": "Facebook_Mobile_Feed",
+        "utm_medium": "CJ01 — Cópia|120236678031870658",
+        "utm_source": "FB",
+        "utm_content": "AD1 03-11 BR|120236678031440658",
+        "utm_campaign": "CA01 BR Escala Baiana AD1 03-11 BR (28/01)|120236677663810658"
+    },
+    "boleto_expiry_date": null,
+    "webhook_event_type": "order_approved",
+    "payment_merchant_id": "2cdd8c6a7733437facbeee6fa6f477c0",
+    "card_rejection_reason": null
+}

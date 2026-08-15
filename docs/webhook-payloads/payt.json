@@ -1,0 +1,72 @@
+{
+    "link": {
+        "url": "https://payt.site/R5Cn5gz",
+        "title": "Ticket 37 - PRO TRADER LT [ FUNIL LT ]",
+        "sources": {
+            "utm_term": "Instagram_Feed",
+            "utm_medium": "25+ — Cópia|120239265020290207",
+            "utm_source": "FB",
+            "utm_content": "CV 434|120239265020750207",
+            "utm_campaign": "[CBO].[131].[QUIZ].[CONTA 20 BM02].[AD 434 QZ].[DARKPOST] — Cópia — Cópia|120239265017670207"
+        },
+        "query_params": {
+            "fbclid": "PAZXh0bgNhZW0BMABhZGlkAass-Xth3W9zcnRjBmFwcF9pZA8xMjQwMjQ1NzQyODc0MTQAAafB-oivLrqiq_Yz8tzBjO5o7XQBVF5vA9mvwTs6-8nl8RVsUQHckyVgInaKcA_aem_QSfD4mz0oLL-9Qq_8z2dew",
+            "utm_id": "120239265017670207"
+        }
+    },
+    "test": false,
+    "type": "order",
+    "status": "paid",
+    "cart_id": "NP9OWXX",
+    "product": {
+        "sku": "fad09d712aa378",
+        "code": "47MVD3",
+        "name": "Pro Trader LT",
+        "type": "digital",
+        "price": 3700,
+        "quantity": 1
+    },
+    "customer": {
+        "ip": "2804:14c:bb81:8fae::1001",
+        "doc": "02596358123",
+        "url": "https://app.payt.com.br/admin/clientes/557579J/edit",
+        "code": "557579J",
+        "name": "Marcella Fontoura Silva Zupelli",
+        "email": "mzupelli@gmail.com",
+        "phone": "62983177904",
+        "fake_email": false
+    },
+    "tangible": false,
+    "seller_id": "RVBDME",
+    "commission": [
+        {
+            "name": "PAYT TECNOLOGIA E EDUCACAO DIGITAL LTDA",
+            "type": "platform",
+            "email": "contato@payt.com.br",
+            "amount": 247
+        },
+        {
+            "name": "FB DIGITAL LTDA",
+            "type": "producer",
+            "email": "suporte@groupgritt.com",
+            "amount": 3453
+        }
+    ],
+    "started_at": "2026-01-28 14:53:36.000000",
+    "updated_at": "2026-01-28 14:55:21.000000",
+    "transaction": {
+        "paid_at": "2026-01-28 14:55:20",
+        "pix_url": "https://checkout.payt.com.br/qr-pix/9ONON93",
+        "pix_code": "00020101021226860014BR.GOV.BCB.PIX2564qrpix.bradesco.com.br/qr/v2/89d870fe-8ee9-414e-a46c-2f762ad426305204000053039865802BR5925MARCELLA FONTOURA SILVA Z6008SAO JOSE62290525Sf200003120TPFDjeNIguLIjE6304D7AE",
+        "quantity": 1,
+        "modifiers": [],
+        "created_at": "2026-01-28 14:54:52",
+        "expires_at": "2026-01-28 15:54:49",
+        "updated_at": "2026-01-28 14:55:21",
+        "total_price": 3700,
+        "payment_method": "pix",
+        "payment_status": "paid"
+    },
+    "transaction_id": "9ONON93",
+    "integration_key": "b75b84b4039958db810544c588ea71ea"
+}

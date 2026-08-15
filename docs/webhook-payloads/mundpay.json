@@ -1,0 +1,70 @@
+{
+  "id": "019df31c-0b1e-735f-9cca-72df863183f3",
+  "ref": "ref_69cd7a02d932e",
+  "amount": "23500",
+  "offers": [
+    {
+      "id": "019dc115-b46d-7331-bfbb-957b7e62f174",
+      "sku": null,
+      "name": "72-Hour Instant Erection Protocol",
+      "type": "up_sell",
+      "price": 23500,
+      "total": 23500,
+      "product": { "id": "019dc115-b45a-7057-94ff-3abc2179c34b", "name": "72-Hour Instant Erection Protocol" },
+      "quantity": 1,
+      "price_formatted": "R$ 235,00",
+      "total_formatted": "R$ 235,00"
+    }
+  ],
+  "status": "paid",
+  "paid_at": "2026-05-04T13:09:58.000000Z",
+  "currency": "BRL",
+  "customer": {
+    "id": "019df318-a168-7050-ad74-a3649fba1a48",
+    "name": "Harry Pang",
+    "email": "haroem@singnet.com.sg",
+    "phone": "559833 2997",
+    "document": "",
+    "location": {
+      "city": "Singapore",
+      "state": null,
+      "country": "SG",
+      "zip_code": null,
+      "ip_address": "116.14.192.122"
+    }
+  },
+  "tracking": {
+    "ref": "ref_69cd7a02d932e",
+    "sck": "FBjLj69f88fb938abadefe665dfc7hQwK21wXxRK20|120248561357390150hQwK21wXxRMUNDO TODO|120248561357410150hQwK21wXxRCRIATIVO 119|120248561357420150hQwK21wXxRInstagram_Reels",
+    "src": "v3_37a0c8c0-4f96-4951-9029-75ef111fc67f_6900fbfb03ede340e9b15c59_2520_s-1",
+    "xcod": "FBjLj69f88fb938abadefe665dfc7hQwK21wXxRK20|120248561357390150hQwK21wXxRMUNDO TODO|120248561357410150hQwK21wXxRCRIATIVO 119|120248561357420150hQwK21wXxRInstagram_Reels",
+    "fbclid": "PAZXh0bgNhZW0BMABhZGlkAas1qGTzO-ZzcnRjBmFwcF9pZA8xMjQwMjQ1NzQyODc0MTQAAacLF6Ih3z29cqnAzIHSaNH7H1DshZ6NWRlW9XPCyo_dC6L8UbMlnq69whViIw_aem_9sdEOfAMLa9Io2yjbYmWiQ",
+    "utm_id": "120248561357390150",
+    "country": "SGP",
+    "currency": "SGD",
+    "utm_term": "Instagram_Reels",
+    "utm_medium": "MUNDO TODO|120248561357410150",
+    "utm_source": "FBjLj69f88fb938abadefe665dfc7",
+    "utm_content": "CRIATIVO 119|120248561357420150::PAZXh0bgNhZW0BMABhZGlkAas1qGTzO-ZzcnRjBmFwcF9wAAacLF6Ih3z29cqnAzIHSaNH7H1DshZ6NWRlW9XPCyo_dC6L8UbMlnq69whViIw_aem_9sdEOfAMLa9Io2yjbYmWiQ::",
+    "utm_campaign": "K20|120248561357390150",
+    "event_source_url": "https://pay.mycheckoutt.com/",
+    "abandoned_cart_event": "0"
+  },
+  "created_at": "2026-05-04T13:09:54.000000Z",
+  "event_type": "order.paid",
+  "net_amount": "20925",
+  "chargeback_at": null,
+  "paymentDetail": {
+    "id": "019df31c-0b4d-718e-a349-6c986f551300",
+    "barcode": null,
+    "qr_code": null,
+    "card_brand": null,
+    "qr_code_url": null,
+    "installments": 1,
+    "bank_slip_url": null,
+    "card_holder_name": null,
+    "card_last_digits": null,
+    "statement_descriptor": "random"
+  },
+  "payment_method": "credit_card"
+}
