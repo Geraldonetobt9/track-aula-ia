@@ -76,15 +76,5 @@ BEGIN
       ADD COLUMN IF NOT EXISTS subscription_end   date;
   END IF;
 
-  -- ----------------------------------------------------------
-  -- Limites de plano
-  -- ----------------------------------------------------------
-  -- plan_rules inteira é derrubada no fim. Está aqui pelo mesmo motivo das
-  -- colunas de app: migrations intermediárias leem estas colunas.
-  IF to_regclass('public.plan_rules') IS NOT NULL THEN
-    ALTER TABLE public.plan_rules
-      ADD COLUMN IF NOT EXISTS max_sales_monthly       integer NOT NULL DEFAULT -1,
-      ADD COLUMN IF NOT EXISTS max_active_ad_accounts  integer NOT NULL DEFAULT -1;
-  END IF;
 END;
 $$;
