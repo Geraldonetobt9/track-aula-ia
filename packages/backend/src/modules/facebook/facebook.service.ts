@@ -352,8 +352,8 @@ export class FacebookService {
     accessToken: string,
     facebookUserId: string,
     facebookUserName: string,
-    tokenExpiresAt: Date,
-  ): Promise<{ savedCount: number; alreadyConnected?: boolean }> {
+    tokenExpiresAt: Date | null,
+  ): Promise<{ savedCount: number }> {
     const client = this.supabase.getClient();
 
     // Fetch the user's workspace (required for facebook_connections)
@@ -370,20 +370,6 @@ export class FacebookService {
     }
 
     const workspaceId = workspace.id;
-
-    // Check if this Facebook profile is already connected
-    const { count: existingProfileCount } = await client
-      .from('facebook_connections')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('facebook_user_id', facebookUserId);
-
-    if ((existingProfileCount || 0) > 0) {
-      this.logger.log(
-        `OAuth: FB user ${facebookUserId} already connected for user ${userId} — skipping`,
-      );
-      return { savedCount: 0, alreadyConnected: true };
-    }
 
     const encAccessToken = this.encryption.encrypt(accessToken);
     const now = new Date().toISOString();
@@ -426,7 +412,7 @@ export class FacebookService {
           .from('facebook_connections')
           .update({
             access_token: encAccessToken,
-            token_expires_at: tokenExpiresAt.toISOString(),
+            token_expires_at: tokenExpiresAt?.toISOString() ?? null,
             account_name: account.name || null,
             account_status: account.account_status ?? null,
             facebook_user_name: facebookUserName || null,
@@ -445,7 +431,7 @@ export class FacebookService {
             ad_account_id: adAccountId,
             facebook_user_id: facebookUserId,
             facebook_user_name: facebookUserName || null,
-            token_expires_at: tokenExpiresAt.toISOString(),
+            token_expires_at: tokenExpiresAt?.toISOString() ?? null,
             account_name: account.name || null,
             account_status: account.account_status ?? null,
             is_valid: true,

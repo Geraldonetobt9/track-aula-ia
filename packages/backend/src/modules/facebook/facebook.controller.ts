@@ -17,7 +17,7 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SupabaseService } from '../../shared/services/supabase.service';
 import { FacebookService } from './facebook.service';
-import { FacebookOAuthService } from './facebook-oauth.service';
+import { FacebookTokenService } from './facebook-token.service';
 import { InsightsService } from './insights.service';
 import { SaleMatcherService } from './sale-matcher.service';
 import { ConfigService } from '@nestjs/config';
@@ -28,7 +28,7 @@ export class FacebookController {
 
   constructor(
     private readonly facebook: FacebookService,
-    private readonly oauth: FacebookOAuthService,
+    private readonly tokens: FacebookTokenService,
     private readonly insights: InsightsService,
     private readonly saleMatcher: SaleMatcherService,
     private readonly supabase: SupabaseService,
@@ -36,110 +36,38 @@ export class FacebookController {
   ) {}
 
   // ============================================
-  // OAuth endpoints (no AuthGuard — redirect-based)
+  // Conexao por token colado
   // ============================================
 
-  @Get('auth/connect')
-  async authConnect(
-    @Query('token') token: string,
-    @Res() reply: FastifyReply,
+  /**
+   * POST /api/facebook/connect  { access_token }
+   *
+   * Conectar = colar o token. Valida no Meta, descobre quem e o dono e
+   * reaproveita saveOAuthConnection, que ja cifra o token e cria uma conexao
+   * por conta de anuncio encontrada.
+   */
+  @Post('connect')
+  @UseGuards(AuthGuard)
+  async connect(
+    @CurrentUser('id') userId: string,
+    @Body() body: { access_token?: string },
   ) {
-    if (!token) {
-      throw new UnauthorizedException('Missing authentication token');
-    }
+    const token = (body?.access_token ?? '').trim();
+    const info = await this.tokens.inspect(token);
 
-    const user = await this.supabase.getUserFromToken(token);
-    if (!user) {
-      throw new UnauthorizedException('Invalid or expired token');
-    }
+    const result = await this.facebook.saveOAuthConnection(
+      userId,
+      token,
+      info.facebookUserId,
+      info.facebookUserName,
+      info.expiresAt,
+    );
 
-    const authUrl = this.oauth.buildAuthorizationUrl(user.id);
-    return reply
-      .header('Referrer-Policy', 'no-referrer')
-      .redirect(302, authUrl);
-  }
-
-  @Get('auth/callback')
-  async authCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') fbError: string,
-    @Query('error_description') errorDescription: string,
-    @Res() reply: FastifyReply,
-  ) {
-    const frontendUrl = this.config.getOrThrow<string>('FRONTEND_URL');
-
-    // Handle Facebook authorization denial
-    if (fbError) {
-      this.logger.warn(`Facebook OAuth denied: ${fbError} — ${errorDescription}`);
-      return reply.redirect(
-        302,
-        `${frontendUrl}/integrations?error=${encodeURIComponent(errorDescription || fbError)}`,
-      );
-    }
-
-    if (!code || !state) {
-      return reply.redirect(
-        302,
-        `${frontendUrl}/integrations?error=${encodeURIComponent('Parâmetros ausentes no callback')}`,
-      );
-    }
-
-    // Validate state (CSRF protection)
-    const userId = this.oauth.verifyState(state);
-    if (!userId) {
-      this.logger.warn('OAuth callback: invalid or expired state');
-      return reply.redirect(
-        302,
-        `${frontendUrl}/integrations?error=${encodeURIComponent('Sessão expirada. Tente novamente.')}`,
-      );
-    }
-
-    try {
-      // Step 1: Exchange code for short-lived token
-      const shortLivedToken = await this.oauth.exchangeCodeForToken(code);
-
-      // Step 2: Exchange for long-lived token (60 days)
-      const { accessToken, expiresAt } =
-        await this.oauth.exchangeForLongLivedToken(shortLivedToken);
-
-      // Step 3: Get Facebook user info
-      const fbUser = await this.oauth.getFacebookUserId(accessToken);
-
-      // Step 4: Discover all ad accounts and save to database
-      const result = await this.facebook.saveOAuthConnection(
-        userId,
-        accessToken,
-        fbUser.id,
-        fbUser.name,
-        expiresAt,
-      );
-
-      if (result.alreadyConnected) {
-        this.logger.log(
-          `OAuth: FB user ${fbUser.id} already connected for user ${userId}`,
-        );
-        return reply.redirect(
-          302,
-          `${frontendUrl}/integrations?error=${encodeURIComponent('Este perfil do Facebook já está conectado. Para reconectar, exclua o perfil e conecte novamente.')}`,
-        );
-      }
-
-      this.logger.log(
-        `OAuth: saved ${result.savedCount} ad accounts for user ${userId}, FB user ${fbUser.id}`,
-      );
-
-      return reply.redirect(
-        302,
-        `${frontendUrl}/integrations?connected=true`,
-      );
-    } catch (err: any) {
-      this.logger.error(`OAuth callback error: ${err.message}`);
-      return reply.redirect(
-        302,
-        `${frontendUrl}/integrations?error=${encodeURIComponent('Erro ao conectar com o Facebook. Tente novamente.')}`,
-      );
-    }
+    return {
+      facebook_user_name: info.facebookUserName,
+      expires_at: info.expiresAt?.toISOString() ?? null,
+      accounts_found: result.savedCount,
+    };
   }
 
   // ============================================
