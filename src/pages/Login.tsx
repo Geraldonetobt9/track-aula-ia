@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /**
  * Não há link para registro: as contas são criadas pelo admin no painel do
@@ -14,9 +19,9 @@ export function Login() {
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return null;
-  if (session) return <Navigate to="/" replace />;
+  if (session) return <Navigate to="/dashboard" replace />;
 
-  async function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
@@ -30,45 +35,51 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <h1 className="text-center text-xl font-semibold">Dashboard Anibal</h1>
-        <p className="mt-1 text-center text-sm text-muted">Entre para continuar</p>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <Card className="glass-card w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle>Dashboard Anibal</CardTitle>
+          <CardDescription>Entre para continuar</CardDescription>
+        </CardHeader>
 
-        <form className="card mt-6 space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="label" htmlFor="email">E-mail</label>
-            <input
-              id="email"
-              type="email"
-              className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-            />
-          </div>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="label" htmlFor="password">Senha</label>
-            <input
-              id="password"
-              type="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          <button className="btn-primary w-full" disabled={submitting}>
-            {submitting ? 'Entrando…' : 'Entrar'}
-          </button>
-        </form>
-      </div>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Entrando…' : 'Entrar'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

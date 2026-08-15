@@ -1,6 +1,20 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 interface AdAccount {
   id: string;
@@ -36,8 +50,9 @@ export function Integrations() {
   const { data, isLoading } = useQuery({
     queryKey: ['meta-status'],
     queryFn: () => api.get<MetaStatus>('/meta/status'),
-    staleTime: 30_000,
   });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['meta-status'] });
 
   const connect = useMutation({
     mutationFn: (value: string) =>
@@ -46,146 +61,157 @@ export function Integrations() {
       }),
     onSuccess: () => {
       setToken('');
-      queryClient.invalidateQueries({ queryKey: ['meta-status'] });
+      invalidate();
     },
   });
 
   const toggle = useMutation({
     mutationFn: (account: AdAccount) =>
       api.patch('/meta/accounts', { id: account.id, is_active: !account.is_active }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['meta-status'] }),
+    onSuccess: invalidate,
   });
 
   const disconnect = useMutation({
     mutationFn: () => api.del('/meta/disconnect'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['meta-status'] }),
+    onSuccess: invalidate,
   });
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Integrações</h1>
-        <p className="mt-1 text-sm text-muted">
-          Conecte sua conta do Meta colando um token de acesso. As contas de anúncio aparecem sozinhas.
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Integrações</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Conecte sua conta do Meta colando um token de acesso. As contas de anúncio aparecem
+          sozinhas.
         </p>
-      </header>
+      </div>
 
-      <section className="card space-y-4">
-        <div className="flex items-start justify-between gap-4">
+      <Card className="glass-card">
+        <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
           <div>
-            <h2 className="font-medium">Meta Ads</h2>
-            {isLoading ? (
-              <p className="mt-1 text-sm text-muted">Carregando…</p>
-            ) : data?.connected ? (
-              <p className="mt-1 text-sm text-muted">
-                Conectado como <span className="text-slate-200">{data.facebook_user_name}</span>
-                {data.expires_at && (
-                  <>
-                    {' · '}
-                    <span className={data.expired ? 'text-red-400' : ''}>
-                      {data.expired ? 'token expirado' : `expira em ${formatDate(data.expires_at)}`}
-                    </span>
-                  </>
-                )}
-              </p>
-            ) : (
-              <p className="mt-1 text-sm text-muted">Nenhum token conectado.</p>
-            )}
+            <CardTitle className="text-base">Meta Ads</CardTitle>
+            <CardDescription className="mt-1">
+              {isLoading ? (
+                'Carregando…'
+              ) : data?.connected ? (
+                <span className="flex flex-wrap items-center gap-2">
+                  <span>
+                    Conectado como{' '}
+                    <span className="text-foreground">{data.facebook_user_name}</span>
+                  </span>
+                  {data.expires_at && (
+                    <Badge variant={data.expired ? 'destructive' : 'secondary'}>
+                      {data.expired ? 'token expirado' : `expira ${formatDate(data.expires_at)}`}
+                    </Badge>
+                  )}
+                </span>
+              ) : (
+                'Nenhum token conectado.'
+              )}
+            </CardDescription>
           </div>
 
           {data?.connected && (
-            <button
-              className="btn-ghost"
-              onClick={() => disconnect.mutate()}
-              disabled={disconnect.isPending}
-            >
+            <Button variant="outline" size="sm" onClick={() => disconnect.mutate()} disabled={disconnect.isPending}>
               Desconectar
-            </button>
+            </Button>
           )}
-        </div>
+        </CardHeader>
 
-        <form
-          className="space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (token.trim()) connect.mutate(token.trim());
-          }}
-        >
-          <div>
-            <label className="label" htmlFor="token">
-              {data?.connected ? 'Substituir token' : 'Token de acesso'}
-            </label>
-            <textarea
-              id="token"
-              className="input min-h-[88px] font-mono text-xs"
-              placeholder="EAAG..."
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <p className="mt-1.5 text-xs text-muted">
-              Gere em developers.facebook.com → Ferramentas → Graph API Explorer, com a permissão{' '}
-              <code className="text-slate-300">ads_read</code>. O token é guardado cifrado e nunca
-              volta para o navegador.
-            </p>
-          </div>
+        <CardContent>
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (token.trim()) connect.mutate(token.trim());
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="token">{data?.connected ? 'Substituir token' : 'Token de acesso'}</Label>
+              <Textarea
+                id="token"
+                className="min-h-[88px] font-mono text-xs"
+                placeholder="EAAG..."
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <p className="text-xs text-muted-foreground">
+                Gere em developers.facebook.com → Ferramentas → Graph API Explorer, com a permissão{' '}
+                <code className="text-foreground">ads_read</code>. O token é guardado cifrado e nunca
+                volta para o navegador.
+              </p>
+            </div>
 
-          {connect.isError && (
-            <p className="text-sm text-red-400">{(connect.error as Error).message}</p>
-          )}
-          {connect.isSuccess && (
-            <p className="text-sm text-emerald-400">
-              Conectado. {connect.data.accounts_found} conta(s) de anúncio encontrada(s).
-            </p>
-          )}
+            {connect.isError && (
+              <Alert variant="destructive">
+                <AlertDescription>{(connect.error as Error).message}</AlertDescription>
+              </Alert>
+            )}
+            {connect.isSuccess && (
+              <Alert>
+                <AlertDescription>
+                  Conectado. {connect.data.accounts_found} conta(s) de anúncio encontrada(s).
+                </AlertDescription>
+              </Alert>
+            )}
 
-          <button className="btn-primary" disabled={!token.trim() || connect.isPending}>
-            {connect.isPending ? 'Validando no Meta…' : 'Conectar'}
-          </button>
-        </form>
-      </section>
+            <Button type="submit" disabled={!token.trim() || connect.isPending}>
+              {connect.isPending ? 'Validando no Meta…' : 'Conectar'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {data?.connected && (
-        <section className="card">
-          <h2 className="font-medium">Contas de anúncio</h2>
-          <p className="mt-1 text-sm text-muted">
-            Marque as contas que o dashboard deve sincronizar.
-          </p>
-
-          {data.accounts.length === 0 ? (
-            <p className="mt-4 text-sm text-muted">
-              Nenhuma conta encontrada para este token. Confira se ele tem acesso ao Business Manager.
-            </p>
-          ) : (
-            <ul className="mt-4 divide-y divide-border">
-              {data.accounts.map((account) => (
-                <li key={account.id} className="flex items-center justify-between gap-4 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm">{account.name ?? account.account_id}</p>
-                    <p className="text-xs text-muted">
-                      {account.account_id}
-                      {account.currency && ` · ${account.currency}`}
-                      {account.status != null && ` · ${ACCOUNT_STATUS[account.status] ?? 'Status ' + account.status}`}
-                    </p>
-                  </div>
-                  <button
-                    className={account.is_active ? 'btn-primary' : 'btn-ghost'}
-                    onClick={() => toggle.mutate(account)}
-                    disabled={toggle.isPending}
-                  >
-                    {account.is_active ? 'Sincronizando' : 'Ativar'}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="text-base">Contas de anúncio</CardTitle>
+            <CardDescription>Escolha quais contas o dashboard deve sincronizar.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : data.accounts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma conta encontrada para este token. Confira se ele tem acesso ao Business
+                Manager.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {data.accounts.map((account) => (
+                  <li key={account.id} className="flex items-center justify-between gap-4 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm">{account.name ?? account.account_id}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {account.account_id}
+                        {account.currency && ` · ${account.currency}`}
+                        {account.status != null &&
+                          ` · ${ACCOUNT_STATUS[account.status] ?? `Status ${account.status}`}`}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={account.is_active}
+                      onCheckedChange={() => toggle.mutate(account)}
+                      disabled={toggle.isPending}
+                      aria-label={`Sincronizar ${account.name ?? account.account_id}`}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
