@@ -1,0 +1,32 @@
+# ============================================================
+# Segredos — NADA daqui pode ir para o GitHub
+# ============================================================
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel
+
+# Dependências e build
+node_modules/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Editor / SO
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Supabase CLI (contém credenciais do projeto linkado)
+supabase/.temp/
+supabase/.branches/
