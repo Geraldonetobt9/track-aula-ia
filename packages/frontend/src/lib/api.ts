@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
+import { API_URL } from './apiUrl';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 
 // ---------------------------------------------------------------------------
 // Plan limit event bus

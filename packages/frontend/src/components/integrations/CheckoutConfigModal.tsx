@@ -23,6 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { Copy, Check, Info, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CheckoutPlatform, CHECKOUT_PLATFORMS, CheckoutIntegration } from '@/types/checkout';
+import { API_URL } from '@/lib/apiUrl';
 
 interface CheckoutConfigModalProps {
   open: boolean;
@@ -36,7 +37,7 @@ interface CheckoutConfigModalProps {
   saving: boolean;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 
 export function CheckoutConfigModal({
   open,

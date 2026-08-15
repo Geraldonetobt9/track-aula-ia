@@ -30,8 +30,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { API_URL } from '@/lib/apiUrl';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 
 interface FacebookProfile {
   facebookUserId: string;

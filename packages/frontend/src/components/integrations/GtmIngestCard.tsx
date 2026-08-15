@@ -7,8 +7,9 @@ import { Activity, Check, Copy, KeyRound, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
 import { toast } from '@/hooks/use-toast';
+import { API_URL } from '@/lib/apiUrl';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 const INGEST_URL = `${API_URL}/gtm/events`;
 
 /** The token is a workspace secret that changes only on explicit rotation. */
