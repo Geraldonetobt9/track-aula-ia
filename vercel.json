@@ -10,9 +10,17 @@
     "api/index.ts": {
       "memory": 1024,
       "maxDuration": 60
+    },
+    "api/diag.ts": {
+      "memory": 128,
+      "maxDuration": 10
     }
   },
   "rewrites": [
+    {
+      "source": "/api/diag",
+      "destination": "/api/diag"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api"
