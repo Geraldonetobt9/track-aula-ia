@@ -50,10 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user profile from database
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
-      // Fetch profile
+      // Nao ha mais plano nem papel: a cobranca e o painel admin sairam do
+      // produto, e com eles as tabelas plan_rules e user_roles. Consultar as
+      // duas aqui fazia esta funcao devolver null e o login nunca redirecionar.
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*, plan_rules:plan_id(plan)')
+        .select('name, email, avatar_url, created_at, active')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -62,32 +64,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      // Fetch role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
+      if (!profile) return null;
 
-      if (roleError) {
-        console.error('Error fetching role:', roleError);
-      }
-
-      if (profile) {
-        return {
-          id: userId,
-          name: profile.name || '',
-          email: profile.email || '',
-          role: (roleData?.role as 'admin' | 'user') || 'user',
-          plan: ((profile.plan_rules as any)?.plan as User['plan']) || 'free',
-          avatar_url: profile.avatar_url,
-          createdAt: profile.created_at,
-          active: profile.active ?? true,
-          subscription_end: profile.subscription_end ?? null,
-        };
-      }
-
-      return null;
+      return {
+        id: userId,
+        name: profile.name || '',
+        email: profile.email || '',
+        // Mantidos no tipo porque varias telas os leem. Com um so usuario e
+        // sem cobranca, os valores sao constantes.
+        role: 'user',
+        plan: 'unlimited',
+        avatar_url: profile.avatar_url,
+        createdAt: profile.created_at,
+        active: profile.active ?? true,
+        subscription_end: null,
+      };
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       return null;
