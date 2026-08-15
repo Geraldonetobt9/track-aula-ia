@@ -18,8 +18,6 @@ interface FacebookConnection {
   id: string;
   user_id: string;
   workspace_id: string | null;
-  app_id: string;
-  app_secret: string;
   access_token: string;
   ad_account_id: string;
   is_valid: boolean;
@@ -1012,7 +1010,7 @@ export class InsightsService {
 
     let connectionQuery = client
       .from('facebook_connections')
-      .select('id, user_id, workspace_id, app_id, app_secret, access_token, ad_account_id, is_valid, last_validated_at, created_at, updated_at')
+      .select('id, user_id, workspace_id, access_token, ad_account_id, is_valid, last_validated_at, created_at, updated_at')
       .eq('user_id', userId);
 
     if (connectionId) {
@@ -1034,8 +1032,6 @@ export class InsightsService {
 
     // Decrypt sensitive fields
     connection.access_token = this.encryption.decryptIfNeeded(connection.access_token);
-    connection.app_id = this.encryption.decryptIfNeeded(connection.app_id);
-    connection.app_secret = this.encryption.decryptIfNeeded(connection.app_secret);
 
     return connection as FacebookConnection;
   }

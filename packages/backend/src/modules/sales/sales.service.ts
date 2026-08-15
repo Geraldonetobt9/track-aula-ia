@@ -43,13 +43,6 @@ export class SalesService {
     // 3. PlanLimitsService decision.
     const decision: SaleDecision = await this.planLimits.checkSaleAcceptance(sale.user_id);
 
-    // 4. Free above limit.
-    if (decision.blocked_by_limit) {
-      const saved = await this.persist({ ...sale, blocked_by_limit: true });
-      await this.planLimits.invalidate(sale.user_id);
-      return saved;
-    }
-
     // 5. Persist normal sale.
     const saved = await this.persist(sale);
 
@@ -80,7 +73,7 @@ export class SalesService {
   ): Promise<Record<string, any> | null> {
     const { data } = await this.supabase.getClient()
       .from('sales')
-      .select('id, status, blocked_by_limit')
+      .select('id, status')
       .eq('external_id', externalId)
       .eq('user_id', userId)
       .maybeSingle();
@@ -134,7 +127,6 @@ export class SalesService {
     const stamped = rows.map((r) => ({
       ...r,
       source: 'import',
-      blocked_by_limit: false,
     }));
 
     const inserted: Array<{ id: string; external_id: string }> = [];
@@ -302,8 +294,7 @@ export class SalesService {
         .select(
           'amount, status, product_name, customer_name, customer_state, utm_content, ad_id, ad_set_id, campaign_id, sold_at, ads(name), ad_sets(name), campaigns(name)',
         )
-        .eq('user_id', userId)
-        .eq('blocked_by_limit', false);
+        .eq('user_id', userId);
 
       if (filters.workspace_id) query = query.eq('workspace_id', filters.workspace_id);
       if (filters.from) query = query.gte('sold_at', toStartOfDayUTC(filters.from));
