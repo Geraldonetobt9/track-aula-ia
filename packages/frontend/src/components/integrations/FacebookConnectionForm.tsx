@@ -261,7 +261,7 @@ function ProfileSection({
 export function FacebookConnectionForm() {
   const {
     allConnections, loading,
-    toggleActive, deleteProfile, refreshProfile,
+    toggleActive, deleteProfile, refreshProfile, refetch,
   } = useFacebookConnection();
   const { workspaces, activeWorkspaceId } = useWorkspaceContext();
   const { user } = useAuth();

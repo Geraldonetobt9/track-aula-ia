@@ -10,7 +10,8 @@
     "lint": "eslint . && bash scripts/check-theme.sh",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
