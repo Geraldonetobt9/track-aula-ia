@@ -105,7 +105,42 @@ A fazer. Repositório de destino: `https://github.com/anibal-riveros/dashboard-a
 
 ## Fase 3 — Deploy na Vercel
 
-A fazer. Região `gru1` (São Paulo).
+### 1. Importar o repositório
+
+Em [vercel.com/new](https://vercel.com/new), importe `anibal-riveros/dashboard-anibal`.
+
+A Vercel detecta Vite sozinha, e o `vercel.json` já fixa build, região `gru1` (São Paulo), rewrite de SPA e os headers de segurança. Não mude nada na tela de configuração.
+
+### 2. Cadastrar as variáveis de ambiente
+
+Antes do primeiro deploy, em **Environment Variables**, cadastre para *Production*, *Preview* e *Development*. Os valores são os mesmos do seu `.env.local`:
+
+| Variável | Natureza |
+|---|---|
+| `SUPABASE_URL` | servidor |
+| `SUPABASE_SERVICE_ROLE_KEY` | **secreta** — ignora RLS |
+| `SUPABASE_JWT_SECRET` | **secreta** |
+| `ENCRYPTION_KEY` | **secreta** — cifra os tokens |
+| `VITE_SUPABASE_URL` | pública, entra no bundle |
+| `VITE_SUPABASE_ANON_KEY` | pública, entra no bundle |
+| `META_API_VERSION` | servidor |
+| `APP_URL` | a URL da Vercel, depois do primeiro deploy |
+
+As `VITE_` precisam existir **antes** do build: elas são embutidas no JavaScript, não lidas em tempo de execução. Se faltar uma, o site sobe e quebra no navegador.
+
+Nunca cadastre a `SUPABASE_SERVICE_ROLE_KEY` com prefixo `VITE_`. Isso a publicaria no bundle e daria acesso total ao banco para qualquer visitante.
+
+### 3. Deploy e verificação
+
+Depois que o deploy terminar:
+
+```bash
+curl https://SEU-APP.vercel.app/api/health
+```
+
+Esperado: `{"status":"ok","database":"ok"}`. Se vier `degraded`, as variáveis do Supabase estão erradas.
+
+Depois entre no dashboard com o e-mail cadastrado e vá em **Integrações** para colar o token do Meta.
 
 ---
 
