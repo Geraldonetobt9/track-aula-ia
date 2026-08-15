@@ -100,16 +100,25 @@ export class InsightsService {
 
     this.logger.log(`Created sync job ${job.id} for user ${userId}`);
 
-    // Start background processing (fire-and-forget)
-    this.performSync(connection, userId, job.id, resolvedPeriod, connection.id).catch(
-      (error) => {
-        this.logger.error(`Background sync failed for job ${job.id}: ${error.message}`);
-        client
-          .from('processing_jobs')
-          .update({ status: 'failed', error: error.message })
-          .eq('id', job.id);
-      },
-    );
+    // Aguarda a sincronizacao terminar, em vez de dispara-la em segundo plano.
+    //
+    // O padrao fire-and-forget funciona num servidor que fica de pe. Em funcao
+    // serverless a instancia e congelada assim que a resposta e enviada: o
+    // trabalho morria no meio, o job ficava em 'processing' para sempre e
+    // daily_ad_spend nunca era preenchido — o dashboard aparecia zerado, sem
+    // erro nenhum para explicar.
+    //
+    // O custo e a requisicao durar o tempo da sincronizacao, por isso a funcao
+    // precisa de maxDuration folgado.
+    try {
+      await this.performSync(connection, userId, job.id, resolvedPeriod, connection.id);
+    } catch (error: any) {
+      this.logger.error(`Sync do job ${job.id} falhou: ${error.message}`);
+      await client
+        .from('processing_jobs')
+        .update({ status: 'failed', error: error.message })
+        .eq('id', job.id);
+    }
 
     return {
       success: true,
