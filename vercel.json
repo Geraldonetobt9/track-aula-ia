@@ -6,16 +6,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "packages/frontend/dist",
   "installCommand": "npm install",
-  "functions": {
-    "api/index.ts": {
-      "memory": 1024,
-      "maxDuration": 60
-    },
-    "api/diag.ts": {
-      "memory": 128,
-      "maxDuration": 10
-    }
-  },
   "rewrites": [
     {
       "source": "/api/diag",

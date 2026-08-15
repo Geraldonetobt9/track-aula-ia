@@ -1,0 +1,16 @@
+{
+  "//": "A raiz do monorepo compila com module: ESNext, para o Vite. Funcoes da Vercel rodam em Node CommonJS, e emitir 'export default' num arquivo tratado como CJS quebra no carregamento — antes do handler, com FUNCTION_INVOCATION_FAILED e sem mensagem util. Este tsconfig isola /api desse ajuste.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["**/*.ts"]
+}
