@@ -30,7 +30,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { API_URL } from '@/lib/apiUrl';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { api } from '@/lib/api';
 
 
 
@@ -267,9 +269,9 @@ export function FacebookConnectionForm() {
   const adAccountLimitReached = isAtLimit('adAccount');
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [connectModalOpen, setConnectModalOpen] = useState(false);
-  const [connectUrl, setConnectUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [token, setToken] = useState('');
+  const [connectError, setConnectError] = useState<string | null>(null);
+
   const [connecting, setConnecting] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [activatingAll, setActivatingAll] = useState<string | null>(null);
@@ -326,52 +328,37 @@ export function FacebookConnectionForm() {
     }
   }, []);
 
-  const buildConnectUrl = async (): Promise<string | null> => {
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
-    if (!token) {
-      toast({
-        title: 'Erro',
-        description: 'Você precisa estar autenticado.',
-        variant: 'destructive',
-      });
-      return null;
-    }
-    return `${API_URL}/facebook/auth/connect?token=${encodeURIComponent(token)}`;
-  };
+  /**
+   * Conectar = colar o token. Substitui o fluxo de OAuth: nao ha mais app do
+   * Facebook, dialogo de autorizacao nem callback. O backend valida o token no
+   * Meta, cifra, e descobre as contas de anuncio sozinho.
+   */
+  const handleConnectToken = async () => {
+    const valor = token.trim();
+    if (!valor) return;
 
-  const handleOpenConnectModal = async () => {
     setConnecting(true);
-    const url = await buildConnectUrl();
-    setConnecting(false);
-    if (!url) return;
-    setConnectUrl(url);
-    setCopied(false);
-    setConnectModalOpen(true);
-  };
+    setConnectError(null);
 
-  const handleContinueInBrowser = () => {
-    if (connectUrl) {
-      setConnectModalOpen(false);
-      window.location.href = connectUrl;
-    }
-  };
-
-  const handleCopyLink = async () => {
-    if (!connectUrl) return;
     try {
-      await navigator.clipboard.writeText(connectUrl);
-      setCopied(true);
-      toast({ title: 'Link copiado!' });
-      setTimeout(() => setCopied(false), 3000);
-    } catch {
+      const resposta = await api.post<{ facebook_user_name: string; accounts_found: number }>(
+        '/facebook/connect',
+        { access_token: valor },
+      );
+
+      setToken('');
       toast({
-        title: 'Erro ao copiar',
-        description: 'Não foi possível copiar o link.',
-        variant: 'destructive',
+        title: 'Conectado!',
+        description: `${resposta.accounts_found} conta(s) de anuncio encontrada(s) em ${resposta.facebook_user_name}.`,
       });
+      await refetch();
+    } catch (err) {
+      setConnectError((err as Error).message);
+    } finally {
+      setConnecting(false);
     }
   };
+
 
   const handleToggle = async (connectionId: string, isActive: boolean): Promise<boolean> => {
     setToggling(connectionId);
@@ -459,89 +446,49 @@ export function FacebookConnectionForm() {
           </div>
         )}
 
-        {/* Connect button — opens method chooser modal */}
-        <Button
-          onClick={handleOpenConnectModal}
-          disabled={connecting}
-          className={`w-full font-medium py-5 ${
-            hasConnections
-              ? 'bg-foreground/10 hover:bg-foreground/15 text-foreground'
-              : 'bg-[#1877F2] hover:bg-[#1877F2]/90 text-foreground'
-          }`}
-        >
-          {connecting ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          ) : (
-            <Facebook className="mr-2 h-5 w-5" />
-          )}
-          {connecting
-            ? 'Preparando...'
-            : hasConnections
-              ? 'Conectar outro perfil'
-              : 'Conectar com Facebook'
-          }
-        </Button>
+        {/* Conexao por token colado */}
+        <div className="space-y-3">
+          <Label htmlFor="fb-token">
+            {hasConnections ? 'Substituir token' : 'Token de acesso do Meta'}
+          </Label>
 
-        {/* Connection method chooser modal */}
-        <Dialog open={connectModalOpen} onOpenChange={setConnectModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-center">Como deseja conectar?</DialogTitle>
-              <DialogDescription className="text-center">
-                Escolha onde autorizar o acesso ao Facebook
-              </DialogDescription>
-            </DialogHeader>
+          <Textarea
+            id="fb-token"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="EAAG..."
+            className="min-h-[88px] font-mono text-xs"
+            autoComplete="off"
+            spellCheck={false}
+          />
 
-            <div className="space-y-3 pt-2">
-              {/* Option 1: Continue in this browser */}
-              <button
-                type="button"
-                onClick={handleContinueInBrowser}
-                className="w-full group flex items-center gap-4 p-4 rounded-xl border border-foreground/10 bg-foreground/[0.03] hover:bg-[#1877F2]/10 hover:border-[#1877F2]/30 transition-all text-left"
-              >
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#1877F2]/15 group-hover:bg-[#1877F2]/25 transition-colors shrink-0">
-                  <ExternalLink className="h-5 w-5 text-[#1877F2]" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">Continuar neste navegador</p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    Conectar diretamente por aqui
-                  </p>
-                </div>
-              </button>
+          <p className="text-xs text-muted-foreground/70">
+            Gere em developers.facebook.com, em Ferramentas &rarr; Graph API Explorer, com a
+            permissao <code className="text-foreground">ads_read</code>. O token e guardado
+            cifrado e nunca volta para o navegador.
+          </p>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-foreground/10" />
-                <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">ou</span>
-                <div className="flex-1 h-px bg-foreground/10" />
-              </div>
-
-              {/* Option 2: Copy link for multi-login browser */}
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="w-full group flex items-center gap-4 p-4 rounded-xl border border-foreground/10 bg-foreground/[0.03] hover:bg-foreground/[0.06] hover:border-foreground/20 transition-all text-left"
-              >
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-foreground/10 group-hover:bg-foreground/15 transition-colors shrink-0">
-                  {copied ? (
-                    <Check className="h-5 w-5 text-success" />
-                  ) : (
-                    <Copy className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">
-                    {copied ? 'Link copiado!' : 'Copiar link de conexão'}
-                  </p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    Use em um navegador multi-login ou compartilhe
-                  </p>
-                </div>
-              </button>
+          {connectError && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <p className="text-xs text-destructive">{connectError}</p>
             </div>
-          </DialogContent>
-        </Dialog>
+          )}
+
+          <Button
+            onClick={handleConnectToken}
+            disabled={!token.trim() || connecting}
+            className="w-full bg-[#1877F2] py-5 font-medium text-foreground hover:bg-[#1877F2]/90"
+          >
+            {connecting ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <Facebook className="mr-2 h-5 w-5" />
+            )}
+            {connecting ? 'Validando no Meta...' : hasConnections ? 'Reconectar' : 'Conectar'}
+          </Button>
+        </div>
+
 
         {hasConnections && activeCount === 0 && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/5 border border-warning/10">

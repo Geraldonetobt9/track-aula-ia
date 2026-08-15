@@ -7,10 +7,10 @@ import { Activity, Check, Copy, KeyRound, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
 import { toast } from '@/hooks/use-toast';
-import { API_URL } from '@/lib/apiUrl';
+import { absoluteApiUrl } from '@/lib/apiUrl';
 
 
-const INGEST_URL = `${API_URL}/gtm/events`;
+const INGEST_URL = `${absoluteApiUrl()}/gtm/events`;
 
 /** The token is a workspace secret that changes only on explicit rotation. */
 const STALE_TIME_MS = 5 * 60 * 1000;

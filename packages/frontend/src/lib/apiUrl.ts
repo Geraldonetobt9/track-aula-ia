@@ -14,3 +14,17 @@
 export const API_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:3001/api' : '/api');
+
+/**
+ * Mesma base, porem sempre absoluta.
+ *
+ * Use esta quando a URL for SAIR do app — webhook que o cliente cola no painel
+ * da plataforma de checkout, endereco de ingestao do GTM. Uma URL relativa
+ * funciona no fetch do proprio site e e inutil em qualquer lugar fora dele:
+ * a Hubla nao tem como resolver "/api/webhooks/hubla".
+ */
+export function absoluteApiUrl(): string {
+  if (/^https?:\/\//i.test(API_URL)) return API_URL;
+  if (typeof window === 'undefined') return API_URL;
+  return `${window.location.origin}${API_URL.startsWith('/') ? '' : '/'}${API_URL}`;
+}
