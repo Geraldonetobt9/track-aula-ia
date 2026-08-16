@@ -164,9 +164,9 @@ const DARK_PALETTE: GlobePalette = {
   countryFillNeighbor: 'rgba(161, 164, 165, 0.09)',
   countryStroke: 'rgba(161, 164, 165, 0.15)',
   brazilFill: 'rgba(161, 164, 165, 0.20)',
-  brazilStroke: 'rgba(209, 254, 23, 0.3)',
+  brazilStroke: 'rgba(62, 143, 216, 0.3)',
   edge: 'rgba(161, 164, 165, 0.08)',
-  heatRgb: '209, 254, 23',
+  heatRgb: '62, 143, 216',
 };
 
 const LIGHT_PALETTE: GlobePalette = {
@@ -178,9 +178,9 @@ const LIGHT_PALETTE: GlobePalette = {
   countryFillNeighbor: 'rgba(80, 80, 80, 0.12)',
   countryStroke: 'rgba(80, 80, 80, 0.20)',
   brazilFill: 'rgba(80, 80, 80, 0.15)',
-  brazilStroke: 'rgba(120, 150, 0, 0.55)',
+  brazilStroke: 'rgba(27, 85, 136, 0.55)',
   edge: 'rgba(80, 80, 80, 0.15)',
-  heatRgb: '90, 122, 0',
+  heatRgb: '27, 85, 136',
 };
 
 export function SalesGlobe({ loading, regions = [], blurValues }: SalesGlobeProps) {

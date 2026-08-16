@@ -64,7 +64,7 @@ export function ImpostoValueCard({
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle at top right, rgba(209,254,23,0.10) 0%, transparent 55%)',
+            'radial-gradient(circle at top right, rgba(62,143,216,0.10) 0%, transparent 55%)',
         }}
       />
       <CardContent className="relative flex h-full flex-col gap-4 p-5">

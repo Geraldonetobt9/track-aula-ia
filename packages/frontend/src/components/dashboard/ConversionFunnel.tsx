@@ -11,10 +11,10 @@ interface ConversionFunnelProps {
 const STEP_WIDTHS = [100, 78, 54, 36];
 
 const STEP_COLORS = [
-  { bg: 'hsl(68 99% 55% / 0.15)', border: 'hsl(68 99% 55% / 0.25)' },
-  { bg: 'hsl(68 99% 55% / 0.22)', border: 'hsl(68 99% 55% / 0.35)' },
-  { bg: 'hsl(68 99% 55% / 0.32)', border: 'hsl(68 99% 55% / 0.45)' },
-  { bg: 'hsl(68 99% 55% / 0.50)', border: 'hsl(68 99% 55% / 0.65)' },
+  { bg: 'hsl(208.4 66.4% 54.5% / 0.15)', border: 'hsl(208.4 66.4% 54.5% / 0.25)' },
+  { bg: 'hsl(208.4 66.4% 54.5% / 0.22)', border: 'hsl(208.4 66.4% 54.5% / 0.35)' },
+  { bg: 'hsl(208.4 66.4% 54.5% / 0.32)', border: 'hsl(208.4 66.4% 54.5% / 0.45)' },
+  { bg: 'hsl(208.4 66.4% 54.5% / 0.50)', border: 'hsl(208.4 66.4% 54.5% / 0.65)' },
 ];
 
 export function ConversionFunnel({

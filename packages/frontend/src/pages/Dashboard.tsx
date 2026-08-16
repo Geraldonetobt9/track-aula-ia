@@ -131,7 +131,7 @@ function RevenueProgressBar({ value, loading, blurValues }: { value: number; loa
     <div
       className="hidden lg:flex items-center gap-3 rounded-full px-4 py-2 border border-accent-readable/15"
       style={{
-        background: 'linear-gradient(135deg, rgba(209,254,23,0.06) 0%, rgba(209,254,23,0.02) 50%, rgba(0,0,0,0.3) 100%)',
+        background: 'linear-gradient(135deg, rgba(62,143,216,0.06) 0%, rgba(62,143,216,0.02) 50%, rgba(0,0,0,0.3) 100%)',
         backdropFilter: 'blur(16px)',
       }}
     >
@@ -143,8 +143,8 @@ function RevenueProgressBar({ value, loading, blurValues }: { value: number; loa
           className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
           style={{
             width: `${progress}%`,
-            background: 'linear-gradient(90deg, rgba(209,254,23,0.3) 0%, #d1fe17 100%)',
-            boxShadow: '0 0 10px rgba(209,254,23,0.3)',
+            background: 'linear-gradient(90deg, rgba(62,143,216,0.3) 0%, #3e8fd8 100%)',
+            boxShadow: '0 0 10px rgba(62,143,216,0.3)',
           }}
         />
       </div>

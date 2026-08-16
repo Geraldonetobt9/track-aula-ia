@@ -34,7 +34,7 @@ export function VturbSummary({ overview, loading, blurValues }: VturbSummaryProp
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle at top right, rgba(209,254,23,0.10) 0%, transparent 55%)',
+              'radial-gradient(circle at top right, rgba(62,143,216,0.10) 0%, transparent 55%)',
           }}
         />
         <CardContent className="relative p-5 sm:p-6">

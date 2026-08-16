@@ -44,7 +44,7 @@ export function useChartColors(): ChartColors {
   const { resolvedTheme } = useTheme();
 
   return useMemo(() => {
-    const primary = token('--primary', '#d1fe17');
+    const primary = token('--primary', '#3e8fd8');
     const accent = token('--accent-readable', primary);
     const success = token('--success', '#16a34a');
     const destructive = token('--destructive', '#dc2626');

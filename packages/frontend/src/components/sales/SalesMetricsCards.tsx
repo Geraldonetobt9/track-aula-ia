@@ -73,7 +73,7 @@ export function SalesMetricsCards({ metrics, loading }: SalesMetricsCardsProps) 
           key={index}
           className="rounded-lg border border-primary/10 p-5"
           style={{
-            background: 'linear-gradient(135deg, rgba(209,254,23,0.06) 0%, rgba(209,254,23,0.02) 40%, rgba(0,0,0,0.3) 100%)',
+            background: 'linear-gradient(135deg, rgba(62,143,216,0.06) 0%, rgba(62,143,216,0.02) 40%, rgba(0,0,0,0.3) 100%)',
             backdropFilter: 'blur(24px)',
           }}
         >

@@ -64,7 +64,7 @@ export default {
           foreground: "hsl(var(--info-foreground))",
         },
         sentinel: {
-          lime: "#d1fe17",
+          blue: "#3e8fd8",
           black: "#0a0a0a",
           dark: "#111111",
           gray: {
@@ -114,8 +114,8 @@ export default {
           to: { opacity: "1", transform: "translateX(0)", filter: "blur(0)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 0 0 rgba(209, 254, 23, 0)" },
-          "50%": { boxShadow: "0 0 20px 2px rgba(209, 254, 23, 0.1)" },
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(62, 143, 216, 0)" },
+          "50%": { boxShadow: "0 0 20px 2px rgba(62, 143, 216, 0.1)" },
         },
       },
       animation: {
