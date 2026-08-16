@@ -187,6 +187,9 @@ export class HublaProcessor {
       user_id: userId,
       workspace_id: workspaceId,
       external_id: invoice.id || `hubla_${Date.now()}`,
+      // Todas as linhas da compra repetem este valor. É por ele que a contagem
+      // de vendas enxerga um pedido só, mesmo com três produtos.
+      order_external_id: invoice.id || null,
       amount,
       product_name: product.name || (products[0] && products[0].name) || null,
       customer_name: customerName,
@@ -228,13 +231,21 @@ export class HublaProcessor {
 
     // Refunds: find and update original sale, never create phantom rows
     if (status === 'refunded') {
-      const { data: existingByExtId } = await supabaseAdmin
-        .from('sales').select('id, status').eq('external_id', saleData.external_id).eq('user_id', userId).maybeSingle();
+      // Estorno vale para o pedido inteiro: busca por order_external_id, e nao
+      // por external_id, porque a compra virou varias linhas e cada uma tem seu
+      // proprio external_id. Estornar so uma deixaria os bumps como aprovados.
+      const { data: linhasDoPedido } = await supabaseAdmin
+        .from('sales')
+        .select('id, status')
+        .eq('order_external_id', saleData.external_id)
+        .eq('user_id', userId);
 
-      if (existingByExtId) {
-        if (existingByExtId.status !== 'refunded') {
-          await supabaseAdmin.from('sales').update({ status: 'refunded' }).eq('id', existingByExtId.id);
+      if (linhasDoPedido && linhasDoPedido.length > 0) {
+        const aEstornar = linhasDoPedido.filter((l) => l.status !== 'refunded').map((l) => l.id);
+        if (aEstornar.length > 0) {
+          await supabaseAdmin.from('sales').update({ status: 'refunded' }).in('id', aEstornar);
         }
+        this.logger.log(`Hubla refund: ${aEstornar.length} linha(s) do pedido ${saleData.external_id}`);
       } else {
         const fallbackResult = await this.webhooksService.findAndRefundOriginalSale({
           userId, customerEmail: user.email || null,
@@ -258,17 +269,46 @@ export class HublaProcessor {
       return { status: 200, body: { success: true, action: 'refunded', status } };
     }
 
-    // Approved sales: route through SalesService for plan-limit enforcement
-    const sale = await this.salesService.upsertFromWebhook(saleData);
+    // Uma linha por produto: o principal e cada order bump.
+    //
+    // O pedido continua sendo um — todas as linhas repetem order_external_id, e
+    // e por ele que "Vendas aprovadas" conta. Gravar assim faz "Vendas em tempo
+    // real", a lista de vendas e o painel de produtos mostrarem os produtos
+    // separados sem nenhum tratamento especial: eles leem linhas.
+    //
+    // Compra sem quebra detalhada cai no caminho de sempre, com uma linha so.
+    const linhas =
+      items.length > 0
+        ? items.map((item, indice) => ({
+            ...saleData,
+            // Deterministico, para o reenvio do webhook atualizar em vez de
+            // duplicar. O offer_id identifica a oferta dentro da fatura.
+            external_id: `${saleData.external_id}:${item.offer_id || item.product_id || indice}`,
+            product_name: item.name,
+            amount: item.amount,
+            is_order_bump: item.is_order_bump,
+          }))
+        : [saleData];
 
-    if (sale?.id) {
-      this.webhooksService.matchAndUpdateSale(sale.id, userId, {
-        adId,
-        utmCampaign,
-        utmContent,
-        utmTerm,
-      });
+    let primeiraVenda: any = null;
+
+    for (const linha of linhas) {
+      const gravada = await this.salesService.upsertFromWebhook(linha);
+      if (!primeiraVenda) primeiraVenda = gravada;
+
+      // A atribuicao vale por linha: cada uma precisa apontar para o anuncio,
+      // senao o faturamento por anuncio perderia os bumps.
+      if (gravada?.id) {
+        this.webhooksService.matchAndUpdateSale(gravada.id, userId, {
+          adId,
+          utmCampaign,
+          utmContent,
+          utmTerm,
+        });
+      }
     }
+
+    const sale = primeiraVenda;
 
     const logData = {
       amount,
