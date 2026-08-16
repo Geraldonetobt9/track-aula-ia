@@ -20,6 +20,67 @@ export class HublaProcessor {
     private readonly salesService: SalesService,
   ) {}
 
+  /**
+   * Desmembra event.products em uma linha por oferta.
+   *
+   * Uma compra na Hubla pode trazer o produto principal e varios order bumps.
+   * O invoice.amount.totalCents ja vem somado — e o que a venda registra, e o
+   * que o dashboard conta como UMA venda. Esta lista guarda a outra leitura:
+   * quanto foi cada produto.
+   *
+   * O valor sai de offers[].amountCents, e nao de um campo por produto, porque
+   * e ali que a Hubla poe o preco cobrado naquela oferta.
+   */
+  private extractItems(products: any[]): Array<{
+    name: string;
+    amount: number;
+    is_order_bump: boolean;
+    product_id: string | null;
+    offer_id: string | null;
+  }> {
+    const items: Array<{
+      name: string;
+      amount: number;
+      is_order_bump: boolean;
+      product_id: string | null;
+      offer_id: string | null;
+    }> = [];
+
+    for (const produto of Array.isArray(products) ? products : []) {
+      const ofertas = Array.isArray(produto?.offers) ? produto.offers : [];
+
+      // Produto sem oferta detalhada ainda deve aparecer, com valor zero, para
+      // a linha nao sumir do painel.
+      if (ofertas.length === 0) {
+        if (produto?.name) {
+          items.push({
+            name: produto.name,
+            amount: 0,
+            is_order_bump: false,
+            product_id: produto.id ?? null,
+            offer_id: null,
+          });
+        }
+        continue;
+      }
+
+      for (const oferta of ofertas) {
+        const centavos = typeof oferta?.amountCents === 'number' ? oferta.amountCents : 0;
+        items.push({
+          // O nome do produto identifica melhor que o da oferta: a oferta
+          // costuma ser um codigo de preco ("M7D - 297").
+          name: produto?.name || oferta?.name || 'Sem produto',
+          amount: centavos / 100,
+          is_order_bump: oferta?.isOrderBump === true,
+          product_id: produto?.id ?? null,
+          offer_id: oferta?.id ?? null,
+        });
+      }
+    }
+
+    return items;
+  }
+
   async process(
     body: any,
     authToken: string | null,
@@ -87,8 +148,18 @@ export class HublaProcessor {
     const product = event.product || {};
     const products = event.products || [];
     const billingAddress = invoice.billingAddress || {};
-    const utm = (invoice.firstPaymentSession || {}).utm || {};
+    // A Hubla manda a sessao de pagamento em `paymentSession` no payload 2.0.0 e
+    // em `firstPaymentSession` no formato antigo. Ler so um dos dois perdia as
+    // UTMs em silencio — e sao elas que ligam a venda ao anuncio, entao a venda
+    // entrava sem atribuicao nenhuma.
+    const paymentSession = invoice.paymentSession || invoice.firstPaymentSession || {};
+    const utm = paymentSession.utm || {};
     const amountObj = invoice.amount || {};
+
+    // Quebra por produto: principal + order bumps, cada um com seu valor.
+    // O dashboard continua contando UMA venda pelo total; esta lista existe
+    // para o painel de produtos mostrar as linhas separadas.
+    const items = this.extractItems(products);
 
     const status = APPROVED_EVENTS.has(eventType) ? 'approved' : 'refunded';
 
@@ -145,9 +216,12 @@ export class HublaProcessor {
         discount_cents: amountObj.discountCents,
         installment_fee_cents: amountObj.installmentFeeCents,
         coupon: invoice.coupon || null,
-        ip: (invoice.firstPaymentSession || {}).ip || null,
+        ip: paymentSession.ip || null,
         product_id: product.id || (products[0] && products[0].id) || null,
         offers: products[0] && products[0].offers ? products[0].offers : null,
+        // Lido pelo painel "Vendas por Produto" para desmembrar a venda.
+        items,
+        has_order_bump: items.some((i) => i.is_order_bump),
         refund: event.refund || null,
       },
     };
