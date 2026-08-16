@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Landmark, Loader2, Check } from 'lucide-react';
-import { ImpostoIllustration } from './ImpostoIllustration';
 
 const formatCurrency = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -114,8 +113,6 @@ export function ImpostoValueCard({
             Selecione um mês para informar o valor
           </p>
         )}
-
-        <ImpostoIllustration />
 
         <div className="mt-auto space-y-1.5 rounded-lg border border-foreground/5 bg-foreground/[0.02] px-3 py-2.5">
           <div className="flex items-center justify-between">
