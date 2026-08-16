@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
-import sentinelaLogo from '@/assets/sentinela-logo.png';
+import marca7dLogo from '@/assets/marca7d-logo.png';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -74,7 +74,7 @@ export default function ForgotPassword() {
 
       <div className="relative z-10 w-full max-w-sm px-4 animate-sentinel-in">
         <div className="mb-10 text-center">
-          <img src={sentinelaLogo} alt="Sentinela" className="mx-auto h-16" />
+          <img src={marca7dLogo} alt="Marca 7 Dígitos" className="mx-auto h-16" />
           <p className="mt-2 text-sm text-muted-foreground">
             Recupere o acesso à sua conta
           </p>

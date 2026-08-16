@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, ArrowLeft, Crown, PanelLeftClose, PanelLeft } from 'lucide-react';
-import sentinelaLogo from '@/assets/sentinela-logo.png';
+import marca7dLogo from '@/assets/marca7d-logo.png';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -32,8 +32,8 @@ export function AdminLayout() {
             collapsed ? "justify-center px-2" : "justify-between px-6"
           )}>
             <img
-              src={sentinelaLogo}
-              alt="Sentinela Admin"
+              src={marca7dLogo}
+              alt="Marca 7 Dígitos"
               className={cn("transition-all duration-300", collapsed ? "h-7" : "h-10")}
             />
             <Button

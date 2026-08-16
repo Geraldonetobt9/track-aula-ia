@@ -14,7 +14,7 @@ import {
   ArrowRight,
   Facebook
 } from 'lucide-react';
-import sentinelaLogo from '@/assets/sentinela-logo.png';
+import marca7dLogo from '@/assets/marca7d-logo.png';
 
 export default function Landing() {
   return (
@@ -23,7 +23,7 @@ export default function Landing() {
       <header className="border-b border-border">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/">
-            <img src={sentinelaLogo} alt="Sentinela" className="h-8" />
+            <img src={marca7dLogo} alt="Marca 7 Dígitos" className="h-8" />
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/login">
@@ -370,7 +370,7 @@ export default function Landing() {
       <footer className="border-t border-border py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <img src={sentinelaLogo} alt="Sentinela" className="h-8" />
+            <img src={marca7dLogo} alt="Marca 7 Dígitos" className="h-8" />
             <div className="flex gap-6 text-sm text-muted-foreground">
               <Link to="/terms" className="hover:text-foreground">
                 Termos de Uso

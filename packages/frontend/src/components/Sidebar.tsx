@@ -18,7 +18,7 @@ import {
   Activity,
   Video,
 } from 'lucide-react';
-import sentinelaLogo from '@/assets/sentinela-logo.png';
+import marca7dLogo from '@/assets/marca7d-logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { isOperatorEmail } from '@/lib/featureAccess';
 
@@ -54,7 +54,7 @@ export function Sidebar({ onNavClick, onCollapsedChange }: { onNavClick?: () => 
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-foreground/5 px-4">
           {!collapsed && (
-            <img src={sentinelaLogo} alt="Sentinela" className="h-12" />
+            <img src={marca7dLogo} alt="Marca 7 Dígitos" className="h-12" />
           )}
           <Button
             variant="ghost"

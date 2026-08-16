@@ -19,7 +19,7 @@ const OPTIONS = [
   {
     value: 'dark',
     label: 'Escuro',
-    description: 'Visual escuro, padrão original do Sentinela.',
+    description: 'Visual escuro, padrão original do painel.',
     icon: Moon,
   },
 ] as const;
@@ -31,7 +31,7 @@ export function AppearanceCard() {
     <Card>
       <CardHeader>
         <CardTitle>Tema</CardTitle>
-        <CardDescription>Escolha como o Sentinela aparece para você.</CardDescription>
+        <CardDescription>Escolha como o painel aparece para você.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-3 sm:grid-cols-3">

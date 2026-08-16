@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
-import sentinelaLogo from '@/assets/sentinela-logo.png';
+import marca7dLogo from '@/assets/marca7d-logo.png';
 
 /**
  * Só entrar. Não há mais "Criar conta": as contas nascem em
@@ -67,7 +67,7 @@ export default function Login() {
       <div className="relative z-10 w-full max-w-sm px-4 animate-sentinel-in">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <img src={sentinelaLogo} alt="Sentinela" className="mx-auto h-16" />
+          <img src={marca7dLogo} alt="Marca 7 Dígitos" className="mx-auto h-16" />
           <p className="mt-2 text-sm text-muted-foreground">Acesse seu painel de controle</p>
         </div>
 

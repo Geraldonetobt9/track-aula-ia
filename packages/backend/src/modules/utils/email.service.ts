@@ -63,7 +63,7 @@ export class EmailService {
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="560" class="container" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding-bottom:32px;">
-              <img src="${siteUrl}/sentinela-logo.png" alt="Sentinela" height="48" style="height:48px;width:auto;">
+              <img src="${siteUrl}/marca7d-logo.png" alt="Marca 7 Dígitos" height="48" style="height:48px;width:auto;">
             </td>
           </tr>
           <tr>
