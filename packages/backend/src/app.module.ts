@@ -22,7 +22,6 @@ import { StripeModule } from './modules/stripe/stripe.module';
 import { UsersModule } from './modules/users/users.module';
 import { AccountModule } from './modules/account/account.module';
 import { GtmEventsModule } from './modules/gtm-events/gtm-events.module';
-import { VturbModule } from './modules/vturb/vturb.module';
 
 const RATE_LIMIT_TTL_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 60;
@@ -51,7 +50,6 @@ const RATE_LIMIT_MAX_REQUESTS = 60;
     UsersModule,
     AccountModule,
     GtmEventsModule,
-    VturbModule,
   ],
   providers: [
     {

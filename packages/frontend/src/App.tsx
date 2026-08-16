@@ -61,7 +61,6 @@ const Settings = lazyWithReload(() => import("./pages/Settings"));
 const Financial = lazyWithReload(() => import("./pages/Financial"));
 const Rules = lazyWithReload(() => import("./pages/Rules"));
 const Events = lazyWithReload(() => import("./pages/Events"));
-const Vturb = lazyWithReload(() => import("./pages/Vturb"));
 const Terms = lazyWithReload(() => import("./pages/Terms"));
 const Privacy = lazyWithReload(() => import("./pages/Privacy"));
 const NotFound = lazyWithReload(() => import("./pages/NotFound"));
@@ -131,7 +130,6 @@ const App = () => (
                         <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
                         <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
                         <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
-                        <Route path="/vturb" element={<ProtectedRoute><Vturb /></ProtectedRoute>} />
                         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
                         {/* Admin Routes */}
