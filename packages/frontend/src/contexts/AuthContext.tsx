@@ -20,7 +20,6 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; isAdmin: boolean }>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<boolean>;
   updateUser: (updates: Partial<User>) => Promise<void>;
@@ -32,7 +31,6 @@ const authContextFallback: AuthContextType = {
   session: null,
   isLoading: false,
   login: async () => ({ success: false, isAdmin: false }),
-  register: async () => false,
   logout: async () => {},
   resetPassword: async () => false,
   updateUser: async () => {},
@@ -200,40 +198,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            name: name,
-          },
-        },
-      });
-
-      if (error) {
-        console.error('Register error:', error.message);
-        return false;
-      }
-
-      // Mark as needing onboarding and send welcome email
-      if (data.user) {
-        localStorage.setItem('adsTracker_needsOnboarding', 'true');
-        
-        // Send welcome email via backend API (fire-and-forget)
-        // The n8n-profiles webhook processor handles welcome emails automatically
-        // when a new profile is created, so no explicit call is needed here.
-      }
-
-      return !!data.user;
-    } catch (error) {
-      console.error('Register exception:', error);
-      return false;
-    }
-  };
-
   const logout = async () => {
     try {
       await supabase.auth.signOut();
@@ -297,7 +261,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session, 
         isLoading, 
         login, 
-        register, 
         logout, 
         resetPassword, 
         updateUser 

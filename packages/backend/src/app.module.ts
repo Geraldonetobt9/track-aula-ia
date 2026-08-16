@@ -19,7 +19,7 @@ import { AutomationRulesModule } from './modules/automation-rules/automation-rul
 import { PlanLimitsModule } from './modules/plan-limits/plan-limits.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { StripeModule } from './modules/stripe/stripe.module';
-import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 import { AccountModule } from './modules/account/account.module';
 import { GtmEventsModule } from './modules/gtm-events/gtm-events.module';
 import { VturbModule } from './modules/vturb/vturb.module';
@@ -48,7 +48,7 @@ const RATE_LIMIT_MAX_REQUESTS = 60;
     PlanLimitsModule,
     SubscriptionsModule,
     StripeModule,
-    AuthModule,
+    UsersModule,
     AccountModule,
     GtmEventsModule,
     VturbModule,

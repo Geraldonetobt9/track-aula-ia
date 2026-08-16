@@ -23,9 +23,28 @@ export class SupabaseService {
     return data.user;
   }
 
-  async isAdmin(_userId: string): Promise<boolean> {
-    // Nao ha mais papeis: a tabela user_roles saiu junto com o painel admin.
-    // Quem administra usa o painel do Supabase, nao o produto.
-    return false;
+  /**
+   * Quem administra e' quem esta em ADMIN_EMAILS.
+   *
+   * A tabela user_roles saiu junto com o painel admin, e guardar o papel numa
+   * coluna do banco significaria que qualquer escrita indevida promove alguem.
+   * A variavel de ambiente so muda com acesso ao painel da Vercel, entao o
+   * privilegio nao e alcancavel a partir do produto.
+   *
+   * Sem a variavel definida ninguem e admin: o padrao e fechado.
+   */
+  async isAdmin(userId: string): Promise<boolean> {
+    const permitidos = (this.config.get<string>('ADMIN_EMAILS') ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (permitidos.length === 0 || !userId) return false;
+
+    const { data, error } = await this.client.auth.admin.getUserById(userId);
+    const email = data?.user?.email?.toLowerCase();
+    if (error || !email) return false;
+
+    return permitidos.includes(email);
   }
 }

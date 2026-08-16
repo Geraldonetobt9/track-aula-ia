@@ -115,7 +115,8 @@ const App = () => (
                         {/* Public Routes - Login is the root */}
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Login />} />
+                        {/* Nao ha cadastro publico: as contas nascem em Configuracoes > Usuarios. */}
+                        <Route path="/register" element={<Navigate to="/login" replace />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/terms" element={<Terms />} />

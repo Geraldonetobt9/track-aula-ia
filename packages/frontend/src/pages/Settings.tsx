@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,8 +16,10 @@ import { PaymentMethodsCard } from '@/components/PlanTab/PaymentMethodsCard';
 import { InvoicesCard } from '@/components/PlanTab/InvoicesCard';
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { AppearanceCard } from '@/components/settings/AppearanceCard';
+import { UsersCard } from '@/components/settings/UsersCard';
+import { api } from '@/lib/api';
 
-const VALID_TABS = ['profile', 'appearance', 'plan', 'taxes'] as const;
+const VALID_TABS = ['profile', 'appearance', 'plan', 'taxes', 'users'] as const;
 const DEFAULT_TAB = 'profile';
 
 export default function Settings() {
@@ -26,6 +28,16 @@ export default function Settings() {
   const [newCostName, setNewCostName] = useState('');
   const [newCostType, setNewCostType] = useState<'percentage' | 'fixed'>('percentage');
   const [newCostValue, setNewCostValue] = useState('');
+  // A aba Usuarios so existe para quem administra. O servidor recusa as rotas
+  // de qualquer forma; isto e so para nao mostrar uma aba que daria 403.
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    api
+      .get<{ is_admin: boolean }>('/users/permissions')
+      .then((r) => setIsAdmin(r.is_admin))
+      .catch(() => setIsAdmin(false));
+  }, []);
 
   const currentTab = useMemo(() => {
     const tabFromUrl = searchParams.get('tab');
@@ -60,6 +72,7 @@ export default function Settings() {
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
             <TabsTrigger value="plan">Plano</TabsTrigger>
             <TabsTrigger value="taxes">Custos</TabsTrigger>
+            {isAdmin && <TabsTrigger value="users">Usuários</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="profile">
@@ -157,6 +170,13 @@ export default function Settings() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="users">
+              <UsersCard />
+            </TabsContent>
+          )}
+
         </Tabs>
       </div>
     </DashboardLayout>

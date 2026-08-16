@@ -1,19 +1,18 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import sentinelaLogo from '@/assets/sentinela-logo.png';
-import { SignupForm } from '@/components/auth/SignupForm';
 
+/**
+ * Só entrar. Não há mais "Criar conta": as contas nascem em
+ * Configurações > Usuários, e só quem administra vê aquela aba.
+ */
 export default function Login() {
-  const location = useLocation();
-  const initialTab = location.pathname === '/register' ? 'signup' : 'login';
-  const [tab, setTab] = useState<'login' | 'signup'>(initialTab);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,12 +32,12 @@ export default function Login() {
       if (result.success) {
         toast({
           title: 'Login realizado!',
-          description: 'Bem-vindo de volta ao Sentinela.',
+          description: 'Bem-vindo de volta.',
         });
         if (emailChanged) {
           setSearchParams({}, { replace: true });
         }
-        navigate(result.isAdmin ? '/admin' : '/dashboard');
+        navigate('/dashboard');
       } else {
         toast({
           title: 'Erro ao entrar',
@@ -57,12 +56,6 @@ export default function Login() {
     }
   }
 
-  function handleSignupSuccess(signupEmail: string) {
-    setEmail(signupEmail);
-    setPassword('');
-    setTab('login');
-  }
-
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background py-12">
       {/* Subtle ambient glow */}
@@ -75,9 +68,7 @@ export default function Login() {
         {/* Logo */}
         <div className="mb-8 text-center">
           <img src={sentinelaLogo} alt="Sentinela" className="mx-auto h-16" />
-          <p className="mt-2 text-sm text-muted-foreground">
-            {tab === 'login' ? 'Acesse seu painel de controle' : 'Crie sua conta para comecar'}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">Acesse seu painel de controle</p>
         </div>
 
         <div className="liquid-glass rounded-2xl border border-border/60 bg-card/75 p-6 shadow-xl">
@@ -92,66 +83,54 @@ export default function Login() {
               </p>
             </div>
           )}
-          <Tabs value={tab} onValueChange={(v) => setTab(v as 'login' | 'signup')} className="space-y-5">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Criar conta</TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="login" className="space-y-5">
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">
-                    E-mail
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="relative space-y-2">
-                  <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Senha
-                  </Label>
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-[30px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <div className="flex justify-end">
-                  <Link
-                    to="/forgot-password"
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Esqueci minha senha
-                  </Link>
-                </div>
-                <Button type="submit" className="w-full h-11 text-sm font-medium" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Entrar
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <SignupForm onSignupSuccess={handleSignupSuccess} />
-            </TabsContent>
-          </Tabs>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">
+                E-mail
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="relative space-y-2">
+              <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">
+                Senha
+              </Label>
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-[30px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
+            <Button type="submit" className="w-full h-11 text-sm font-medium" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Entrar
+            </Button>
+          </form>
         </div>
       </div>
     </div>
