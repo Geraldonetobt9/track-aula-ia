@@ -6210,14 +6210,14 @@ GRANT EXECUTE ON FUNCTION public.sales_summary(uuid, uuid, timestamptz, timestam
 -- ============================================================
 -- Vendas por Produto: desmembra order bumps
 -- ============================================================
--- Uma compra na Hubla pode trazer o produto principal e varios order bumps,
--- cada um com seu valor, alem do total somado da fatura.
+-- Uma compra na Hubla traz o produto principal e os order bumps, cada um com
+-- seu valor, alem do total somado da fatura.
 --
 -- O dashboard conta UMA venda pelo total — isso nao muda. O que muda e o
--- painel "Vendas por Produto": ele passa a mostrar uma linha por produto, com
--- o valor daquele produto, lendo metadata.items gravado pelo processador.
+-- painel "Vendas por Produto": uma linha por produto, com o valor daquele
+-- produto, lendo metadata.items gravado pelo processador.
 --
--- Venda sem metadata.items continua aparecendo pelo product_name e pelo valor
+-- Venda sem metadata.items continua aparecendo pelo product_name e valor
 -- cheio, entao o historico ja gravado nao se perde.
 
 CREATE OR REPLACE FUNCTION public.sales_summary(
@@ -6294,27 +6294,43 @@ BEGIN
     v_avg_ticket := v_gross_revenue / v_approved_count;
   END IF;
 
-  SELECT COALESCE(jsonb_agg(row), '[]'::jsonb)
+  -- Vendas por Produto, desmembrando order bumps.
+  --
+  -- Uma compra na Hubla pode trazer o produto principal e varios bumps, cada um
+  -- com seu valor. O processador guarda essa quebra em metadata.items.
+  --
+  -- Isto NAO afeta o dashboard: la a venda continua sendo uma so, pelo total.
+  -- Sao duas leituras do mesmo fato.
+  --
+  -- A agregacao acontece em colunas simples e so depois vira JSON. Montar o
+  -- jsonb_build_object dentro do GROUP BY, com ORDER BY sobre um agregado,
+  -- fazia o Postgres recusar com 42803.
+  SELECT COALESCE(
+    jsonb_agg(
+      jsonb_build_object(
+        'product_name', item_name,
+        'count',        qtd,
+        'revenue',      receita
+      ) ORDER BY receita DESC NULLS LAST
+    ),
+    '[]'::jsonb
+  )
   INTO v_by_product
   FROM (
-    SELECT jsonb_build_object(
-      'product_name', item_name,
-      'count', COUNT(*),
-      'revenue', COALESCE(SUM(item_amount), 0)
-    ) AS row
+    SELECT
+      item_name,
+      COUNT(*)                      AS qtd,
+      COALESCE(SUM(item_amount), 0) AS receita
     FROM (
-      -- Uma compra pode conter o produto principal e varios order bumps. O
-      -- processador guarda essa quebra em metadata.items; aqui ela vira uma
-      -- linha por produto, com o valor daquele produto.
+      -- O LATERAL sobre '[null]' preserva a venda que nao tem items: o
+      -- elemento nulo faz o COALESCE cair no product_name e no amount da venda,
+      -- entao o historico ja gravado continua aparecendo.
       --
-      -- Isto NAO afeta o dashboard: la a venda continua sendo uma so, pelo
-      -- valor total. Sao duas leituras do mesmo fato.
-      --
-      -- O LATERAL sobre '[null]' mantem no resultado a venda que nao tem
-      -- items — o elemento nulo faz o COALESCE cair no product_name da venda.
+      -- O alias i(item) nomeia a coluna alem da tabela; so 'AS item' deixaria
+      -- a referencia ambigua entre a linha inteira e a coluna.
       SELECT
-        COALESCE(item->>'name', s.product_name, 'Sem produto') AS item_name,
-        COALESCE((item->>'amount')::numeric, s.amount)             AS item_amount
+        COALESCE(i.item ->> 'name', s.product_name, 'Sem produto') AS item_name,
+        COALESCE((i.item ->> 'amount')::numeric, s.amount)          AS item_amount
       FROM public.sales s
       LEFT JOIN LATERAL jsonb_array_elements(
         CASE
@@ -6323,7 +6339,7 @@ BEGIN
           THEN s.metadata -> 'items'
           ELSE '[null]'::jsonb
         END
-      ) AS item ON true
+      ) AS i(item) ON true
       WHERE s.user_id = p_user_id
         AND s.status = 'approved'
         AND (p_workspace_id IS NULL OR s.workspace_id = p_workspace_id)
@@ -6340,7 +6356,7 @@ BEGIN
         )
     ) expandido
     GROUP BY item_name
-    ORDER BY SUM(item_amount) DESC NULLS LAST
+    ORDER BY receita DESC NULLS LAST
     LIMIT 10
   ) t;
 
