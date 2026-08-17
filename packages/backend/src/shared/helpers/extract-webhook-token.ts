@@ -31,6 +31,13 @@ export function extractWebhookToken(
       if (req.headers['x-signature']) return req.headers['x-signature'] as string;
       if (req.headers['x-eduzz-token']) return req.headers['x-eduzz-token'] as string;
       break;
+    case 'hubla':
+      // A Hubla assina cada evento com o token dela neste header. Ela nao poe
+      // token nenhum no corpo, entao sem este case a requisicao chegava sem
+      // autenticacao e era descartada — com HTTP 200, o que fazia a Hubla
+      // marcar a entrega como bem-sucedida enquanto a venda se perdia.
+      if (req.headers['x-hubla-token']) return req.headers['x-hubla-token'] as string;
+      break;
     case 'monetizze':
       if (req.headers['x-monetizze-token']) return req.headers['x-monetizze-token'] as string;
       if (req.headers['monetizze-token']) return req.headers['monetizze-token'] as string;

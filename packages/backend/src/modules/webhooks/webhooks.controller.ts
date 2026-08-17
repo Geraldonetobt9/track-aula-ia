@@ -81,8 +81,17 @@ export class WebhooksController {
       // Reject webhooks without auth token, unless the platform's processor validates auth itself
       // (e.g., Kiwify validates HMAC signature from querystring; n8n-profiles runs custom logic).
       if (!authToken && !SELF_AUTHENTICATING_PLATFORMS.has(platform)) {
-        this.logger.warn(`Webhook ${platform}: rejected — no authentication token`);
-        res.status(200).send({ success: false, message: 'Missing authentication token' });
+        // Os nomes dos headers recebidos, sem os valores: e o que diz qual
+        // header a plataforma usa quando ela nao esta na lista do extrator.
+        this.logger.warn(
+          `Webhook ${platform}: recusado — sem token. Headers recebidos: ` +
+            Object.keys(headers).join(', '),
+        );
+        // 401, e nao 200. Responder sucesso aqui escondia a falha: a
+        // plataforma marcava a entrega como certa e a venda sumia sem
+        // deixar rastro. Com 401 o erro aparece no painel do checkout, e a
+        // reentrega automatica grava a venda assim que o token for corrigido.
+        res.status(401).send({ success: false, message: 'Missing authentication token' });
         return;
       }
 
