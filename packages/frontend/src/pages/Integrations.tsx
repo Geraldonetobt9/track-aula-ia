@@ -1,6 +1,7 @@
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { FacebookConnectionForm } from '@/components/integrations/FacebookConnectionForm';
 import { CheckoutIntegrationsSection } from '@/components/integrations/CheckoutIntegrationsSection';
+import { UtmPatternCard } from '@/components/integrations/UtmPatternCard';
 import { Separator } from '@/components/ui/separator';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,6 +46,11 @@ export default function Integrations() {
           <>
             {/* Facebook Ads - Developer App Form */}
             <FacebookConnectionForm />
+
+            <Separator />
+
+            {/* Padrao de UTM: pertence ao Facebook — e o que se cola no anuncio. */}
+            <UtmPatternCard />
 
             <Separator />
 
