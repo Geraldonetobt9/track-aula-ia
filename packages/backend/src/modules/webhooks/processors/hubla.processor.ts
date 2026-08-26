@@ -156,6 +156,18 @@ export class HublaProcessor {
     const utm = paymentSession.utm || {};
     const amountObj = invoice.amount || {};
 
+    // Quando a venda aconteceu, para o painel, e quando o dinheiro entrou.
+    //
+    // invoice.saleDate e a data em que a fatura nasceu, nao em que foi paga.
+    // Num PIX ou boleto isso costuma ser outro dia: a venda era gravada no dia
+    // do checkout e nao aparecia no "hoje", mesmo tendo caido agora. Pior, ela
+    // aparecia retroativamente num dia que ja tinha sido conferido.
+    //
+    // O momento do pagamento vem em statusAt, na entrada de status "paid".
+    const pagamento = Array.isArray(invoice.statusAt)
+      ? invoice.statusAt.find((s: any) => s?.status === 'paid')?.when
+      : null;
+
     // Quebra por produto: principal + order bumps, cada um com seu valor.
     // O dashboard continua contando UMA venda pelo total; esta lista existe
     // para o painel de produtos mostrar as linhas separadas.
@@ -208,7 +220,7 @@ export class HublaProcessor {
       utm_content: utmContent,
       utm_term: utmTerm,
       checkout_integration_id: integrationId,
-      sold_at: invoice.saleDate || new Date().toISOString(),
+      sold_at: pagamento || invoice.saleDate || new Date().toISOString(),
       metadata: {
         event_type: eventType,
         invoice_id: invoice.id,
