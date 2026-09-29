@@ -25,7 +25,6 @@ export interface WorkspaceTrackingConfig {
   pixelId: string | null;
   token: string | null;
   testEventCode: string | null;
-  mirrorBrowser: boolean;
 }
 
 export interface MetaEvent {
@@ -125,7 +124,6 @@ export class MetaCapiService {
       pixelId: data.meta_pixel_id ?? null,
       token,
       testEventCode: data.meta_test_event_code ?? null,
-      mirrorBrowser: !!data.meta_mirror_browser,
     };
     this.cache.set(key, config, CONFIG_TTL_MS);
     return config;

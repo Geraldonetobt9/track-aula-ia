@@ -30,9 +30,10 @@
  *     URL no onclick/data-href, redirecionamento por script (Navigation API,
  *     que também troca o destino pelo decorado) ou sentinel('checkout', url).
  *     Os dois com event_id, que o servidor usa na CAPI.
- *   - MIRROR com PIXEL: o próprio snippet carrega o pixel do Meta e dispara
- *     PageView e InitiateCheckout com o mesmo event_id da CAPI, para o Meta
- *     deduplicar. Sem PIXEL, usa o fbq que a página já tiver.
+ *   - Com PIXEL configurado, o próprio snippet carrega o pixel do Meta e
+ *     dispara PageView e InitiateCheckout no navegador com o mesmo event_id
+ *     da CAPI: o Meta deduplica pelo event_id. Sem PIXEL não há CAPI, e o
+ *     snippet não toca em fbq nenhum.
  *   - page_exit ao sair, com o tempo na página.
  *   - sentinel('track', 'nome', {props}) para eventos manuais.
  *   - Do Not Track ligado: não faz nada.
@@ -40,7 +41,7 @@
 
 const SOURCE = `(function (w, d) {
   'use strict';
-  var TID = __TID__, ENDPOINT = __ENDPOINT__, PARAM = __PARAM__, MIRROR = __MIRROR__, PIXEL = __PIXEL__;
+  var TID = __TID__, ENDPOINT = __ENDPOINT__, PARAM = __PARAM__, PIXEL = __PIXEL__;
   var n = w.navigator || {};
   var pending = (w.sentinel && w.sentinel.q) || [];
   if (n.doNotTrack == '1' || n.doNotTrack == 'yes' || w.doNotTrack == '1' || n.msDoNotTrack == '1') {
@@ -252,14 +253,10 @@ const SOURCE = `(function (w, d) {
   }
 
   function mirror(name, id) {
-    if (!MIRROR) return;
+    if (!PIXEL) return;
     try {
-      if (PIXEL) {
-        loadPixel();
-        w.fbq('trackSingle', PIXEL, name, {}, { eventID: id });
-      } else if (typeof w.fbq === 'function') {
-        w.fbq('track', name, {}, { eventID: id });
-      }
+      loadPixel();
+      w.fbq('trackSingle', PIXEL, name, {}, { eventID: id });
     } catch (e) {}
   }
 
@@ -464,9 +461,7 @@ const COMPACT = SOURCE.split('\n')
 export interface TrackerOptions {
   /** Parâmetro que a plataforma devolve no webhook. */
   param: string;
-  /** Dispara também o pixel do navegador (fbq) com o mesmo event_id. */
-  mirrorBrowser: boolean;
-  /** Com o espelho ligado, o snippet carrega e inicia este pixel sozinho. */
+  /** O snippet carrega e inicia este pixel, e dispara nele com o event_id da CAPI. */
   pixelId?: string | null;
 }
 
@@ -483,14 +478,13 @@ const SAFE_PARAM = /^(sck|src|xcod|trk|utm_term)$/;
 export function buildTrackerScript(
   workspaceId: string,
   endpoint: string,
-  options: TrackerOptions = { param: 'sck', mirrorBrowser: false },
+  options: TrackerOptions = { param: 'sck' },
 ): string {
   const param = SAFE_PARAM.test(options.param) ? options.param : 'sck';
   const pixel = options.pixelId && SAFE_PIXEL.test(options.pixelId) ? options.pixelId : null;
   return COMPACT.replace('__TID__', () => JSON.stringify(workspaceId))
     .replace('__ENDPOINT__', () => JSON.stringify(endpoint))
     .replace('__PARAM__', () => JSON.stringify(param))
-    .replace('__MIRROR__', () => (options.mirrorBrowser ? 'true' : 'false'))
     .replace('__PIXEL__', () => JSON.stringify(pixel));
 }
 

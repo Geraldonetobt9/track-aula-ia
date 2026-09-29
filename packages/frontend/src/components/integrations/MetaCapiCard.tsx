@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CircleCheck, CircleDashed, FileJson, RefreshCw, Send, XCircle } from 'lucide-react';
@@ -58,14 +57,6 @@ export function MetaCapiCard() {
       await save({ meta_capi_token: '' });
     } catch (e) {
       toast({ title: 'Não foi possível remover', description: errorMessage(e), variant: 'destructive' });
-    }
-  };
-
-  const alternarEspelho = async (on: boolean) => {
-    try {
-      await save({ meta_mirror_browser: on });
-    } catch (e) {
-      toast({ title: 'Não foi possível salvar', description: errorMessage(e), variant: 'destructive' });
     }
   };
 
@@ -146,21 +137,13 @@ export function MetaCapiCard() {
           apague o código depois de conferir.
         </p>
 
-        <div className="flex items-start justify-between gap-4 rounded-lg border border-foreground/5 bg-foreground/[0.02] px-3 py-3">
-          <div className="space-y-0.5">
-            <Label htmlFor="capi-mirror" className="text-sm">Pixel do Meta na página</Label>
-            <p className="text-xs text-muted-foreground">
-              O snippet carrega o pixel {pixel.trim() || 'configurado acima'} sozinho e dispara PageView e InitiateCheckout
-              no navegador com o mesmo ID de evento da API de Conversões — o Meta junta os dois e conta uma vez. Não
-              precisa colar o código do pixel na página; se ele já estiver lá, tire-o, senão o PageView conta duas vezes.
-            </p>
-          </div>
-          <Switch
-            id="capi-mirror"
-            checked={settings.meta_mirror_browser}
-            onCheckedChange={alternarEspelho}
-            disabled={saving}
-          />
+        <div className="space-y-0.5 rounded-lg border border-foreground/5 bg-foreground/[0.02] px-3 py-3">
+          <p className="text-sm text-foreground">Pixel do Meta na página</p>
+          <p className="text-xs text-muted-foreground">
+            Com o ID do pixel salvo, o snippet carrega o pixel sozinho e dispara PageView e InitiateCheckout no navegador
+            com o mesmo ID de evento da API de Conversões — o Meta deduplica pelo ID e conta uma vez. Não cole o código
+            do pixel na página: se ele já estiver lá, tire, senão o PageView da página conta duas vezes.
+          </p>
         </div>
 
         {configured && data && (

@@ -70,7 +70,7 @@ describe('Rotas públicas do rastreio (HTTP)', () => {
   beforeEach(() => {
     rpc.mockReset().mockResolvedValue({ data: 1, error: null });
     maybeSingle.mockReset().mockResolvedValue({ data: { id: TID }, error: null });
-    capi.getConfig.mockReset().mockResolvedValue({ param: 'xcod', mirrorBrowser: true });
+    capi.getConfig.mockReset().mockResolvedValue({ param: 'xcod', pixelId: '123456789012345' });
     capi.sendWebEvents.mockReset().mockResolvedValue(undefined);
   });
 
@@ -95,7 +95,7 @@ describe('Rotas públicas do rastreio (HTTP)', () => {
       expect(res.body).toContain(JSON.stringify(TID));
       expect(res.body).toContain('"https://track.loja.com.br/api/t/collect"');
       expect(res.body).toContain('PARAM = "xcod"');
-      expect(res.body).toContain('MIRROR = true');
+      expect(res.body).toContain('PIXEL = "123456789012345"');
     });
 
     it('area desconhecida recebe um script que nao faz nada, sem 404 no console do cliente', async () => {

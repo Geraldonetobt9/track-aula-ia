@@ -24,7 +24,6 @@ interface LoadOptions {
   dnt?: boolean;
   queued?: unknown[][];
   param?: string;
-  mirror?: boolean;
   cookies?: string[];
   fbq?: jest.Mock;
   pixel?: string;
@@ -69,7 +68,7 @@ function loadPage(url: string, html = '', opts: LoadOptions = {}): Page {
   for (const args of opts.queued ?? []) w.sentinel(...args);
 
   w.eval(
-    buildTrackerScript(TID, ENDPOINT, { param: opts.param ?? 'sck', mirrorBrowser: !!opts.mirror, pixelId: opts.pixel }),
+    buildTrackerScript(TID, ENDPOINT, { param: opts.param ?? 'sck', pixelId: opts.pixel }),
   );
 
   return {
@@ -149,16 +148,8 @@ describe('tracker.js', () => {
       expect(page.dom.window.document.cookie).toContain('IwAR_novo');
     });
 
-    it('espelha no pixel do navegador com o mesmo event_id, quando ligado', async () => {
-      const fbq = jest.fn();
-      const page = loadPage('https://www.loja.com.br/oferta', '', { mirror: true, fbq });
-      await ready(page);
-      const id = events(page)[0].event_id;
-      expect(fbq).toHaveBeenCalledWith('track', 'PageView', {}, { eventID: id });
-    });
-
-    it('com o pixel configurado, carrega o pixel sozinho e dispara so nele', async () => {
-      const page = loadPage('https://www.loja.com.br/oferta', '', { mirror: true, pixel: '123456789012345' });
+    it('com o pixel configurado, carrega o pixel sozinho e dispara com o event_id da CAPI', async () => {
+      const page = loadPage('https://www.loja.com.br/oferta', '', { pixel: '123456789012345' });
       await ready(page);
       const doc = page.dom.window.document;
       const script = doc.querySelector('script[src*="connect.facebook.net"]');
@@ -169,18 +160,22 @@ describe('tracker.js', () => {
       expect(calls[1]).toEqual(['trackSingle', '123456789012345', 'PageView', {}, { eventID: id }]);
     });
 
-    it('pixel configurado mas espelho desligado: nao carrega nada', async () => {
-      const page = loadPage('https://www.loja.com.br/oferta', '', { pixel: '123456789012345' });
+    it('pagina que ja tem fbq: usa o dela, sem carregar outro, e dispara so no pixel da area', async () => {
+      const fbq = jest.fn();
+      const page = loadPage('https://www.loja.com.br/oferta', '', { fbq, pixel: '123456789012345' });
       await ready(page);
-      expect(page.w.fbq).toBeUndefined();
+      const id = events(page)[0].event_id;
       expect(page.dom.window.document.querySelector('script[src*="connect.facebook.net"]')).toBeNull();
+      expect(fbq).toHaveBeenCalledWith('init', '123456789012345', expect.any(Object));
+      expect(fbq).toHaveBeenCalledWith('trackSingle', '123456789012345', 'PageView', {}, { eventID: id });
     });
 
-    it('nao toca no fbq com o espelho desligado', async () => {
+    it('sem pixel configurado nao toca em fbq nenhum', async () => {
       const fbq = jest.fn();
       const page = loadPage('https://www.loja.com.br/oferta', '', { fbq });
       await ready(page);
       expect(fbq).not.toHaveBeenCalled();
+      expect(page.dom.window.document.querySelector('script[src*="connect.facebook.net"]')).toBeNull();
     });
   });
 
@@ -344,16 +339,15 @@ describe('tracker.js', () => {
       expect(events(page).filter((e) => e.type === 'checkout_click')).toHaveLength(1);
     });
 
-    it('espelha no pixel com o mesmo event_id', async () => {
-      const fbq = jest.fn();
+    it('dispara no pixel com o mesmo event_id da CAPI', async () => {
       const page = loadPage('https://www.loja.com.br/oferta', '<a id="buy" href="https://pay.kiwify.com.br/abc">C</a>', {
-        mirror: true,
-        fbq,
+        pixel: '123456789012345',
       });
       await ready(page);
       (page.dom.window.document.getElementById('buy') as HTMLElement).click();
       const click = events(page).find((e) => e.type === 'checkout_click');
-      expect(fbq).toHaveBeenCalledWith('track', 'InitiateCheckout', {}, { eventID: click.event_id });
+      const calls = page.w.fbq.queue.map((a: any) => Array.from(a));
+      expect(calls).toContainEqual(['trackSingle', '123456789012345', 'InitiateCheckout', {}, { eventID: click.event_id }]);
     });
 
     it('link marcado com data-sentinel-checkout conta mesmo fora da lista de plataformas', async () => {
@@ -460,7 +454,7 @@ describe('tracker.js', () => {
     });
 
     it('parametro fora da lista cai no sck', () => {
-      const script = buildTrackerScript(TID, ENDPOINT, { param: '"+alert(1)+"', mirrorBrowser: false });
+      const script = buildTrackerScript(TID, ENDPOINT, { param: '"+alert(1)+"' });
       expect(script).toContain('PARAM = "sck"');
     });
 
