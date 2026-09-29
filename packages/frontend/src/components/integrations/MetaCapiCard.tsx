@@ -148,11 +148,11 @@ export function MetaCapiCard() {
 
         <div className="flex items-start justify-between gap-4 rounded-lg border border-foreground/5 bg-foreground/[0.02] px-3 py-3">
           <div className="space-y-0.5">
-            <Label htmlFor="capi-mirror" className="text-sm">Disparar também o pixel do navegador</Label>
+            <Label htmlFor="capi-mirror" className="text-sm">Pixel do Meta na página</Label>
             <p className="text-xs text-muted-foreground">
-              O snippet chama <code className="font-mono">fbq</code> com o mesmo ID de evento, e o Meta junta os dois.
-              Ligue só se o pixel estiver na página, e tire do código base do pixel a linha{' '}
-              <code className="font-mono">fbq('track', 'PageView')</code> — senão o PageView do navegador conta duas vezes.
+              O snippet carrega o pixel {pixel.trim() || 'configurado acima'} sozinho e dispara PageView e InitiateCheckout
+              no navegador com o mesmo ID de evento da API de Conversões — o Meta junta os dois e conta uma vez. Não
+              precisa colar o código do pixel na página; se ele já estiver lá, tire-o, senão o PageView conta duas vezes.
             </p>
           </div>
           <Switch

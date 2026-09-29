@@ -117,6 +117,7 @@ export class TrackingCollectController {
       buildTrackerScript(workspaceId, this.collectUrl(req), {
         param: config?.param ?? 'sck',
         mirrorBrowser: config?.mirrorBrowser ?? false,
+        pixelId: config?.pixelId ?? null,
       }),
     );
   }

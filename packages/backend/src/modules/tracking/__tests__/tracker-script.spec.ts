@@ -27,6 +27,7 @@ interface LoadOptions {
   mirror?: boolean;
   cookies?: string[];
   fbq?: jest.Mock;
+  pixel?: string;
 }
 
 /**
@@ -67,7 +68,9 @@ function loadPage(url: string, html = '', opts: LoadOptions = {}): Page {
   };
   for (const args of opts.queued ?? []) w.sentinel(...args);
 
-  w.eval(buildTrackerScript(TID, ENDPOINT, { param: opts.param ?? 'sck', mirrorBrowser: !!opts.mirror }));
+  w.eval(
+    buildTrackerScript(TID, ENDPOINT, { param: opts.param ?? 'sck', mirrorBrowser: !!opts.mirror, pixelId: opts.pixel }),
+  );
 
   return {
     dom,
@@ -154,6 +157,25 @@ describe('tracker.js', () => {
       expect(fbq).toHaveBeenCalledWith('track', 'PageView', {}, { eventID: id });
     });
 
+    it('com o pixel configurado, carrega o pixel sozinho e dispara so nele', async () => {
+      const page = loadPage('https://www.loja.com.br/oferta', '', { mirror: true, pixel: '123456789012345' });
+      await ready(page);
+      const doc = page.dom.window.document;
+      const script = doc.querySelector('script[src*="connect.facebook.net"]');
+      expect(script).not.toBeNull();
+      const calls = page.w.fbq.queue.map((a: any) => Array.from(a));
+      const id = events(page)[0].event_id;
+      expect(calls[0]).toEqual(['init', '123456789012345', { external_id: page.beacons[0].vid }]);
+      expect(calls[1]).toEqual(['trackSingle', '123456789012345', 'PageView', {}, { eventID: id }]);
+    });
+
+    it('pixel configurado mas espelho desligado: nao carrega nada', async () => {
+      const page = loadPage('https://www.loja.com.br/oferta', '', { pixel: '123456789012345' });
+      await ready(page);
+      expect(page.w.fbq).toBeUndefined();
+      expect(page.dom.window.document.querySelector('script[src*="connect.facebook.net"]')).toBeNull();
+    });
+
     it('nao toca no fbq com o espelho desligado', async () => {
       const fbq = jest.fn();
       const page = loadPage('https://www.loja.com.br/oferta', '', { fbq });
@@ -214,14 +236,64 @@ describe('tracker.js', () => {
       expect(events(page)[0].utm_term).toBe('feed');
     });
 
-    it('nao troca um sck que o cliente ja usa', async () => {
+    it('substitui um sck que ja estava no link: sem o indexador a venda nao casa com a visita', async () => {
       const page = loadPage(
         'https://www.loja.com.br/oferta',
         '<a id="buy" href="https://pay.kiwify.com.br/abc?sck=meu-codigo">Comprar</a>',
       );
       await ready(page);
       const href = (page.dom.window.document.getElementById('buy') as HTMLAnchorElement).href;
-      expect(new URL(href).searchParams.getAll('sck')).toEqual(['meu-codigo']);
+      expect(new URL(href).searchParams.getAll('sck')).toEqual([`stl_${sidOf(page)}`]);
+    });
+
+    it('leva todos os parametros da chegada, nao so as UTMs', async () => {
+      const page = loadPage(
+        'https://www.loja.com.br/oferta?utm_source=fb&src=anuncio7&xcod=abc&fbclid=IwAR0&cupom=PROMO',
+        '<a id="buy" href="https://pay.hotmart.com/X123?off=1">C</a>',
+      );
+      await ready(page);
+      const url = new URL((page.dom.window.document.getElementById('buy') as HTMLAnchorElement).href);
+      expect(url.searchParams.get('sck')).toBe(`stl_${sidOf(page)}`);
+      expect(url.searchParams.get('utm_source')).toBe('fb');
+      expect(url.searchParams.get('src')).toBe('anuncio7');
+      expect(url.searchParams.get('xcod')).toBe('abc');
+      expect(url.searchParams.get('fbclid')).toBe('IwAR0');
+      expect(url.searchParams.get('cupom')).toBe('PROMO');
+      expect(url.searchParams.get('off')).toBe('1');
+    });
+
+    it('parametros da chegada seguem numa segunda pagina sem query', async () => {
+      const first = loadPage('https://www.loja.com.br/oferta?utm_source=fb&cupom=PROMO');
+      await ready(first);
+      const cookies = first.dom.window.document.cookie.split('; ');
+      const page = loadPage('https://www.loja.com.br/oferta-2', '<a id="buy" href="https://pay.hotmart.com/X">C</a>', {
+        cookies,
+      });
+      await ready(page);
+      const url = new URL((page.dom.window.document.getElementById('buy') as HTMLAnchorElement).href);
+      expect(url.searchParams.get('cupom')).toBe('PROMO');
+      expect(url.searchParams.get('utm_source')).toBe('fb');
+    });
+
+    it('decora o botao que aparece depois do carregamento (CTA atrasado do video)', async () => {
+      const page = loadPage('https://www.loja.com.br/oferta?utm_source=fb');
+      await ready(page);
+      const doc = page.dom.window.document;
+      const a = doc.createElement('a');
+      a.id = 'late';
+      a.href = 'https://pay.kiwify.com.br/abc';
+      doc.body.appendChild(a);
+      await new Promise((r) => setTimeout(r, 120));
+      const url = new URL(a.href);
+      expect(url.searchParams.get('sck')).toBe(`stl_${sidOf(page)}`);
+      expect(url.searchParams.get('utm_source')).toBe('fb');
+    });
+
+    it('checkout em subdominio pay./seguro. de dominio proprio conta', async () => {
+      const page = loadPage('https://www.loja.com.br/oferta', '<a id="buy" href="https://seguro.minhaloja.com.br/c/1">C</a>');
+      await ready(page);
+      const href = (page.dom.window.document.getElementById('buy') as HTMLAnchorElement).href;
+      expect(new URL(href).searchParams.get('sck')).toBe(`stl_${sidOf(page)}`);
     });
 
     it('vai no formulario de checkout como campo escondido', async () => {
@@ -292,6 +364,41 @@ describe('tracker.js', () => {
       await ready(page);
       (page.dom.window.document.getElementById('buy') as HTMLElement).click();
       expect(events(page).some((e) => e.type === 'checkout_click')).toBe(true);
+    });
+
+    it('botao que redireciona pelo onclick: conta e leva o indexador', async () => {
+      const page = loadPage(
+        'https://www.loja.com.br/oferta?utm_source=fb',
+        `<div><button id="b" onclick="window.location.href='https://pay.hotmart.com/X123?off=1'"><span id="t">Comprar</span></button></div>`,
+      );
+      await ready(page);
+      (page.dom.window.document.getElementById('t') as HTMLElement).click();
+      expect(events(page).some((e) => e.type === 'checkout_click')).toBe(true);
+      const onclick = page.dom.window.document.getElementById('b')!.getAttribute('onclick')!;
+      const url = new URL(onclick.match(/'([^']+)'/)![1]);
+      expect(url.searchParams.get('sck')).toBe(`stl_${sidOf(page)}`);
+      expect(url.searchParams.get('utm_source')).toBe('fb');
+      expect(url.searchParams.get('off')).toBe('1');
+    });
+
+    it('botao comum, sem checkout, nao conta', async () => {
+      const page = loadPage('https://www.loja.com.br/oferta', `<button id="b" onclick="abrirModal()">Saiba mais</button>`);
+      await ready(page);
+      (page.dom.window.document.getElementById('b') as HTMLElement).click();
+      expect(events(page).some((e) => e.type === 'checkout_click')).toBe(false);
+    });
+
+    it('sentinel("checkout", url) conta e redireciona com o indexador', async () => {
+      const page = loadPage('https://www.loja.com.br/oferta?utm_source=fb');
+      await ready(page);
+      // jsdom não navega; basta ver que tentou, com a URL decorada.
+      const errors: string[] = [];
+      page.dom.virtualConsole.on('jsdomError', (e: Error) => errors.push(e.message));
+      page.w.sentinel('checkout', 'https://pay.hotmart.com/X123');
+      expect(events(page).some((e) => e.type === 'checkout_click')).toBe(true);
+      const click = events(page).find((e) => e.type === 'checkout_click');
+      expect(new URL(click.url).hostname).toBe('www.loja.com.br');
+      expect(errors.join()).toMatch(/navigation/i);
     });
 
     it('sentinel("track", "checkout_click") manual', async () => {

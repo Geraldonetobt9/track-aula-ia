@@ -18,12 +18,21 @@
  *   - O indexador stl_<sessão> vai no parâmetro da plataforma (sck, src, xcod,
  *     trk ou utm_term): na URL da página, nos links e nos formulários de
  *     checkout. A plataforma o devolve no webhook, e é ele que liga a compra à
- *     visita — o papel do Stape Store nos containers do sGTM.
+ *     visita — o papel do Stape Store nos containers do sGTM. No link do
+ *     checkout ele sempre vence um valor que já estava lá: sem ele a venda não
+ *     casa com a visita.
+ *   - Todos os parâmetros da URL de chegada (_stl_qs, 7 dias) seguem para o
+ *     checkout, não só as UTMs. Links que aparecem depois do carregamento (o
+ *     botão que o VTurb solta no meio do vídeo) são decorados por um
+ *     MutationObserver.
  *   - pageview quando o DOM carrega; checkout_click (InitiateCheckout) quando a
- *     página vai para o checkout, por link, formulário, window.open ou
- *     redirecionamento por script (Navigation API, onde existe). Os dois com
- *     event_id, que o servidor usa na CAPI e o pixel do navegador pode usar
- *     para deduplicar (MIRROR).
+ *     página vai para o checkout: link, formulário, window.open, botão com a
+ *     URL no onclick/data-href, redirecionamento por script (Navigation API,
+ *     que também troca o destino pelo decorado) ou sentinel('checkout', url).
+ *     Os dois com event_id, que o servidor usa na CAPI.
+ *   - MIRROR com PIXEL: o próprio snippet carrega o pixel do Meta e dispara
+ *     PageView e InitiateCheckout com o mesmo event_id da CAPI, para o Meta
+ *     deduplicar. Sem PIXEL, usa o fbq que a página já tiver.
  *   - page_exit ao sair, com o tempo na página.
  *   - sentinel('track', 'nome', {props}) para eventos manuais.
  *   - Do Not Track ligado: não faz nada.
@@ -31,7 +40,7 @@
 
 const SOURCE = `(function (w, d) {
   'use strict';
-  var TID = __TID__, ENDPOINT = __ENDPOINT__, PARAM = __PARAM__, MIRROR = __MIRROR__;
+  var TID = __TID__, ENDPOINT = __ENDPOINT__, PARAM = __PARAM__, MIRROR = __MIRROR__, PIXEL = __PIXEL__;
   var n = w.navigator || {};
   var pending = (w.sentinel && w.sentinel.q) || [];
   if (n.doNotTrack == '1' || n.doNotTrack == 'yes' || w.doNotTrack == '1' || n.msDoNotTrack == '1') {
@@ -43,8 +52,10 @@ const SOURCE = `(function (w, d) {
 
   var YEAR = 31536000, SESSION = 1800, UTM_TTL = 604800, FB_TTL = 7776000;
   var PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid', 'ad_id'];
-  var FORWARD = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'];
   var CHECKOUT = /(hotmart|kiwify|kirvano|perfectpay|payt|cakto|hub\\.la|hubla|ticto|cartpanda|ggcheckout|lastlink|eduzz|mundpay|monetizze|greenn|clkdmg|digitalmanager|assiny|doppus|frendz|herospark|kavoo|pagtrust|wiapy|wiven|yampi|checkout)/i;
+  var CHECKOUT_SUB = /^(pay|payment|seguro|secure|checkout|compra|comprar|pagamento)\\./i;
+  var URL_IN_TEXT = /https?:\\/\\/[^\\s'"<>()]+/g;
+  var URL_ATTRS = ['onclick', 'data-href', 'data-url', 'data-link', 'formaction'];
   var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
   function uuid() {
@@ -108,11 +119,26 @@ const SOURCE = `(function (w, d) {
     try { return JSON.parse(getCookie('_stl_utm') || '{}') || {}; } catch (e) { return {}; }
   }
 
+  function readQuery() {
+    var pairs = location.search.replace(/^\\?/, '').split('&'), keep = [], i, k;
+    for (i = 0; i < pairs.length; i++) {
+      k = pairs[i].split('=')[0];
+      if (k && pairs[i].indexOf('=stl_') < 0) keep.push(pairs[i]);
+    }
+    if (keep.length) {
+      var qs = keep.join('&').slice(0, 1500);
+      setCookie('_stl_qs', qs, UTM_TTL);
+      return qs;
+    }
+    return getCookie('_stl_qs') || '';
+  }
+
   var queue = [], timer = null, sid = null;
   var vid = getCookie('_stl_vid');
   if (!UUID.test(vid || '')) vid = uuid();
   setCookie('_stl_vid', vid, YEAR);
   var utm = readParams();
+  var arrival = readQuery();
 
   var now0 = new Date().getTime();
   var fbp = getCookie('_fbp');
@@ -187,7 +213,10 @@ const SOURCE = `(function (w, d) {
     var changed = cur !== sid;
     sid = cur;
     setCookie('_stl_sid', sid, SESSION);
-    if (changed) markPage();
+    if (changed) {
+      markPage();
+      if (ready) scheduleDecorate();
+    }
   }
 
   function enqueue(ev, now) {
@@ -197,7 +226,7 @@ const SOURCE = `(function (w, d) {
     else if (!timer) timer = setTimeout(flush, 2000);
   }
 
-  var pageId = uuid().slice(0, 8), start = now0, exited = false, icSent = false;
+  var pageId = uuid().slice(0, 8), start = now0, exited = false, icSent = false, ready = false, decorateTimer = null;
 
   function event(type, extra) {
     var e = { type: type, url: location.href, page_id: pageId }, k;
@@ -205,10 +234,33 @@ const SOURCE = `(function (w, d) {
     return e;
   }
 
-  function mirror(name, id) {
-    if (MIRROR && typeof w.fbq === 'function') {
-      try { w.fbq('track', name, {}, { eventID: id }); } catch (e) {}
+  var pixelOn = false;
+  function loadPixel() {
+    if (pixelOn) return;
+    pixelOn = true;
+    if (typeof w.fbq !== 'function') {
+      var f = w.fbq = function () { f.callMethod ? f.callMethod.apply(f, arguments) : f.queue.push(arguments); };
+      if (!w._fbq) w._fbq = f;
+      f.push = f; f.loaded = true; f.version = '2.0'; f.queue = [];
+      var s = d.createElement('script'), first = d.getElementsByTagName('script')[0];
+      s.async = true;
+      s.src = 'https://connect.facebook.net/en_US/fbevents.js';
+      if (first && first.parentNode) first.parentNode.insertBefore(s, first);
+      else (d.head || d.documentElement).appendChild(s);
     }
+    try { w.fbq('init', PIXEL, { external_id: vid }); } catch (e) {}
+  }
+
+  function mirror(name, id) {
+    if (!MIRROR) return;
+    try {
+      if (PIXEL) {
+        loadPixel();
+        w.fbq('trackSingle', PIXEL, name, {}, { eventID: id });
+      } else if (typeof w.fbq === 'function') {
+        w.fbq('track', name, {}, { eventID: id });
+      }
+    } catch (e) {}
   }
 
   function exit() {
@@ -226,15 +278,21 @@ const SOURCE = `(function (w, d) {
   function isCheckout(a, marked) {
     if (!a || !a.href || String(a.protocol).indexOf('http') !== 0) return false;
     if (marked) return true;
-    return a.hostname !== location.hostname && CHECKOUT.test(a.hostname);
+    return a.hostname !== location.hostname && (CHECKOUT.test(a.hostname) || CHECKOUT_SUB.test(a.hostname));
+  }
+
+  function hasKey(href, k) {
+    var p = (href.split('#')[0].split('?')[1] || '').split('&'), i;
+    for (i = 0; i < p.length; i++) if (p[i].split('=')[0] === k) return true;
+    return false;
   }
 
   function decorateUrl(href) {
-    var add = [], i, k;
-    href = setParam(href, 'stl_' + sid, PARAM === 'utm_term');
-    for (i = 0; i < FORWARD.length; i++) {
-      k = FORWARD[i];
-      if (k !== PARAM && utm[k] && !new RegExp('[?&]' + k + '=').test(href)) add.push(k + '=' + encodeURIComponent(utm[k]));
+    var add = [], pairs = arrival ? arrival.split('&') : [], i, k;
+    href = setParam(href, 'stl_' + sid, true);
+    for (i = 0; i < pairs.length; i++) {
+      k = pairs[i].split('=')[0];
+      if (k !== PARAM && !hasKey(href, k)) add.push(pairs[i]);
     }
     if (!add.length) return href;
     var hash = '', h = href.indexOf('#');
@@ -256,19 +314,55 @@ const SOURCE = `(function (w, d) {
   }
 
   function decorateAll() {
+    decorateTimer = null;
     var links = d.getElementsByTagName('a'), i;
     for (i = 0; i < links.length; i++) {
       if (isCheckout(links[i], links[i].hasAttribute && links[i].hasAttribute('data-sentinel-checkout'))) decorate(links[i]);
     }
   }
 
+  function scheduleDecorate() {
+    if (!decorateTimer) decorateTimer = setTimeout(decorateAll, 50);
+  }
+
+  function checkoutInAttrs(el) {
+    var i, v, urls, j, found = null;
+    if (!el.getAttribute) return null;
+    for (i = 0; i < URL_ATTRS.length; i++) {
+      v = el.getAttribute(URL_ATTRS[i]);
+      urls = v && v.match(URL_IN_TEXT);
+      for (j = 0; urls && j < urls.length; j++) {
+        if (!isCheckout(linkFor(urls[j]), el.hasAttribute('data-sentinel-checkout'))) continue;
+        found = found || urls[j];
+        v = v.split(urls[j]).join(decorateUrl(urls[j]));
+        el.setAttribute(URL_ATTRS[i], v);
+      }
+    }
+    return found;
+  }
+
   function onClick(ev) {
-    var a = ev.target;
+    var a = ev.target, el = ev.target, url;
     while (a && a.nodeName !== 'A') a = a.parentNode;
-    if (!isCheckout(a, a && a.hasAttribute && a.hasAttribute('data-sentinel-checkout'))) return;
+    if (isCheckout(a, a && a.hasAttribute && a.hasAttribute('data-sentinel-checkout'))) {
+      touchSession();
+      decorate(a);
+      checkout(a.href);
+      return;
+    }
     touchSession();
-    decorate(a);
-    checkout(a.href);
+    for (; el && el !== d; el = el.parentNode) {
+      url = checkoutInAttrs(el);
+      if (url) { checkout(url); return; }
+    }
+  }
+
+  function goCheckout(url) {
+    if (!url) return;
+    touchSession();
+    var next = decorateUrl(linkFor(url).href);
+    checkout(next);
+    location.href = next;
   }
 
   function onSubmit(ev) {
@@ -296,6 +390,7 @@ const SOURCE = `(function (w, d) {
 
   function api(cmd) {
     if (cmd === 'track') track(arguments[1], arguments[2]);
+    else if (cmd === 'checkout') goCheckout(arguments[1]);
   }
 
   function pageview() {
@@ -303,7 +398,13 @@ const SOURCE = `(function (w, d) {
     for (i = 0; i < PARAMS.length; i++) if (utm[PARAMS[i]]) pv[PARAMS[i]] = utm[PARAMS[i]];
     enqueue(pv, true);
     mirror('PageView', id);
+    ready = true;
     decorateAll();
+    if (w.MutationObserver) {
+      new w.MutationObserver(scheduleDecorate).observe(d.documentElement, {
+        childList: true, subtree: true, attributes: true, attributeFilter: ['href']
+      });
+    }
   }
 
   touchSession();
@@ -321,8 +422,15 @@ const SOURCE = `(function (w, d) {
   }
   if (w.navigation && w.navigation.addEventListener) {
     w.navigation.addEventListener('navigate', function (e) {
-      var url = e.destination && e.destination.url;
-      if (url && isCheckout(linkFor(url))) checkout(url);
+      var url = e.destination && e.destination.url, next;
+      if (!url || !isCheckout(linkFor(url))) return;
+      touchSession();
+      checkout(url);
+      next = decorateUrl(linkFor(url).href);
+      if (next !== url && e.cancelable && !e.formData && !e.hashChange && e.navigationType !== 'traverse') {
+        e.preventDefault();
+        setTimeout(function () { location.href = next; }, 0);
+      }
     });
   }
 
@@ -358,7 +466,11 @@ export interface TrackerOptions {
   param: string;
   /** Dispara também o pixel do navegador (fbq) com o mesmo event_id. */
   mirrorBrowser: boolean;
+  /** Com o espelho ligado, o snippet carrega e inicia este pixel sozinho. */
+  pixelId?: string | null;
 }
+
+const SAFE_PIXEL = /^\d{5,20}$/;
 
 const SAFE_PARAM = /^(sck|src|xcod|trk|utm_term)$/;
 
@@ -374,10 +486,12 @@ export function buildTrackerScript(
   options: TrackerOptions = { param: 'sck', mirrorBrowser: false },
 ): string {
   const param = SAFE_PARAM.test(options.param) ? options.param : 'sck';
+  const pixel = options.pixelId && SAFE_PIXEL.test(options.pixelId) ? options.pixelId : null;
   return COMPACT.replace('__TID__', () => JSON.stringify(workspaceId))
     .replace('__ENDPOINT__', () => JSON.stringify(endpoint))
     .replace('__PARAM__', () => JSON.stringify(param))
-    .replace('__MIRROR__', () => (options.mirrorBrowser ? 'true' : 'false'));
+    .replace('__MIRROR__', () => (options.mirrorBrowser ? 'true' : 'false'))
+    .replace('__PIXEL__', () => JSON.stringify(pixel));
 }
 
 /** Resposta para área desconhecida: define sentinel() e não faz nada. */

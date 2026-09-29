@@ -300,8 +300,12 @@ export function TrackingSnippetCard() {
         <div className="space-y-1.5 text-xs text-muted-foreground">
           <p>
             O PageView sai quando a página carrega. O InitiateCheckout sai quando a visita vai para o checkout — por
-            link, formulário ou redirecionamento. Botão para um domínio fora da lista de plataformas? Marque com{' '}
-            <code className="font-mono text-foreground">data-sentinel-checkout</code>.
+            link, formulário, botão com a URL no <code className="font-mono text-foreground">onclick</code> ou
+            redirecionamento. Todos os parâmetros da URL de chegada e o indexador vão junto para o checkout. Botão para
+            um domínio fora da lista de plataformas? Marque com{' '}
+            <code className="font-mono text-foreground">data-sentinel-checkout</code>. Redirecionamento feito pelo seu
+            próprio script? Troque o <code className="font-mono text-foreground">location.href = url</code> por{' '}
+            <code className="font-mono text-foreground">sentinel('checkout', url)</code>.
           </p>
           <p className="text-muted-foreground/70">
             Não coleta nome nem e-mail na página, e respeita o Do Not Track do navegador. O IP fica 90 dias, para a
