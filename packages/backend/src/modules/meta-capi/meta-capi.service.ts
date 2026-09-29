@@ -420,6 +420,29 @@ export class MetaCapiService {
     return { summary, events: recent.data ?? [] };
   }
 
+  /**
+   * Um envio com o corpo mandado ao Meta e a resposta. Separado da lista para
+   * ela não carregar 50 payloads a cada atualização.
+   *
+   * O corpo é remontado como sai em post(): { data: [evento] }, sem o
+   * access_token — ele nunca sai do servidor.
+   */
+  async getEvent(userId: string, workspaceId: string, id: string) {
+    await this.assertOwner(userId, workspaceId);
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('capi_events')
+      .select('id, event_name, event_id, status, attempts, error, fbtrace_id, created_at, sent_at, payload, response')
+      .eq('workspace_id', workspaceId)
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new NotFoundException('Envio nao encontrado');
+
+    const { payload, ...rest } = data;
+    return { ...rest, request: { data: [payload] } };
+  }
+
   async assertOwner(userId: string, workspaceId: string): Promise<void> {
     const { data, error } = await this.supabase
       .getClient()

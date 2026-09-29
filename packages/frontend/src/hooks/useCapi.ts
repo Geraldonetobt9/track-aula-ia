@@ -38,6 +38,12 @@ export interface CapiEventRow {
   sale_id: string | null;
 }
 
+/** Um envio aberto: o corpo mandado ao Meta (sem o token) e a resposta dele. */
+export interface CapiEventDetail extends Omit<CapiEventRow, 'sale_id'> {
+  request: { data: unknown[] };
+  response: unknown;
+}
+
 export interface CapiEventsResponse {
   summary: Record<string, { sent: number; failed: number }>;
   events: CapiEventRow[];
@@ -67,6 +73,18 @@ export function useCapiSettings() {
     save: mutation.mutateAsync,
     saving: mutation.isPending,
   };
+}
+
+/** Payload de um envio, buscado só quando alguém abre o detalhe. */
+export function useCapiEvent(id: string | null) {
+  const { activeWorkspaceId } = useWorkspaceContext();
+  const query = useQuery<CapiEventDetail, Error>({
+    queryKey: ['capi-event', activeWorkspaceId, id],
+    enabled: !!id && !!activeWorkspaceId,
+    retry: false,
+    queryFn: () => api.get<CapiEventDetail>(`/capi/events/${id}?workspace_id=${activeWorkspaceId}`),
+  });
+  return { event: query.data ?? null, loading: query.isLoading, error: query.error?.message ?? null };
 }
 
 /** Últimos envios à CAPI. Atualiza sozinho enquanto a tela está aberta. */

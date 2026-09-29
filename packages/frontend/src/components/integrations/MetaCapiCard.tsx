@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CircleCheck, CircleDashed, RefreshCw, Send, XCircle } from 'lucide-react';
+import { CircleCheck, CircleDashed, FileJson, RefreshCw, Send, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { errorMessage } from '@/lib/utils';
 import { useCapiEvents, useCapiSettings } from '@/hooks/useCapi';
+import { CapiPayloadDialog } from './CapiPayloadDialog';
 
 const EVENTS = ['PageView', 'InitiateCheckout', 'Purchase'] as const;
 
@@ -28,6 +29,7 @@ export function MetaCapiCard() {
   const [pixel, setPixel] = useState('');
   const [token, setToken] = useState('');
   const [testCode, setTestCode] = useState('');
+  const [openEventId, setOpenEventId] = useState<string | null>(null);
 
   useEffect(() => {
     setPixel(settings?.meta_pixel_id ?? '');
@@ -197,6 +199,7 @@ export function MetaCapiCard() {
                       <TableHead>Situação</TableHead>
                       <TableHead>Quando</TableHead>
                       <TableHead>Detalhe</TableHead>
+                      <TableHead className="w-0"><span className="sr-only">Payload</span></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -224,6 +227,11 @@ export function MetaCapiCard() {
                         <TableCell className="max-w-[280px] truncate text-xs text-muted-foreground" title={e.error ?? e.fbtrace_id ?? ''}>
                           {e.error ?? (e.event_name === 'Purchase' ? e.event_id.replace(/^purchase:/, 'pedido ') : e.fbtrace_id ?? '')}
                         </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setOpenEventId(e.id)}>
+                            <FileJson className="mr-1 h-3.5 w-3.5" /> Payload
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -233,6 +241,8 @@ export function MetaCapiCard() {
           </div>
         )}
       </CardContent>
+
+      <CapiPayloadDialog eventId={openEventId} onClose={() => setOpenEventId(null)} />
     </Card>
   );
 }

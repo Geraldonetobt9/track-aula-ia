@@ -270,4 +270,27 @@ describe('MetaCapiService', () => {
       expect(Math.abs(event.event_time - Date.now() / 1000)).toBeLessThan(5);
     });
   });
+
+  describe('detalhe de um envio', () => {
+    const payload = { event_name: 'PageView', event_id: 'e-pv', user_data: { em: ['hash'] } };
+
+    it('devolve o corpo como foi ao Meta, sem o token, e a resposta', async () => {
+      const { service } = makeService({
+        'capi_events.select': {
+          data: { id: 'row-1', event_name: 'PageView', status: 'sent', payload, response: { events_received: 1 } },
+          error: null,
+        },
+      });
+      const detail: any = await service.getEvent('user-1', WS, 'row-1');
+      expect(detail.request).toEqual({ data: [payload] });
+      expect(detail.response).toEqual({ events_received: 1 });
+      expect(JSON.stringify(detail)).not.toContain('EAAB-token');
+      expect(detail.payload).toBeUndefined();
+    });
+
+    it('envio de outra area nao aparece', async () => {
+      const { service } = makeService({ 'capi_events.select': { data: null, error: null } });
+      await expect(service.getEvent('user-1', WS, 'row-x')).rejects.toThrow('Envio nao encontrado');
+    });
+  });
 });

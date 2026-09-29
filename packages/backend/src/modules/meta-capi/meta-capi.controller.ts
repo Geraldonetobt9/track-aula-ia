@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   Headers,
+  Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -81,6 +83,15 @@ export class MetaCapiController {
   @Get('events')
   listEvents(@CurrentUser('id') userId: string, @Query() query: CapiWorkspaceQueryDto) {
     return this.capi.listEvents(userId, query.workspace_id);
+  }
+
+  @Get('events/:id')
+  getEvent(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: CapiWorkspaceQueryDto,
+  ) {
+    return this.capi.getEvent(userId, query.workspace_id, id);
   }
 
   @Post('retry')
