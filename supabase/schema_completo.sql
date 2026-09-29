@@ -1,5 +1,5 @@
 -- ============================================================
--- SCHEMA COMPLETO — Dashboard Anibal
+-- SCHEMA COMPLETO — Dashboard de Tracking
 -- ============================================================
 -- ARQUIVO GERADO. Nao edite aqui: edite supabase/migrations/ e rode
 --   node scripts/gerar-schema.js

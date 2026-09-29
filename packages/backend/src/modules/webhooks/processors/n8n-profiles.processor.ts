@@ -93,12 +93,10 @@ export class N8nProfilesProcessor {
     );
 
     if (profileEmail) {
-      const supabaseUrl =
-        this.config.get<string>('SUPABASE_URL') ||
-        'https://picgyetvkjymfrgsjozt.supabase.co';
+      const supabaseUrl = this.config.get<string>('SUPABASE_URL');
       const supabaseAnonKey = this.config.get<string>('SUPABASE_ANON_KEY');
 
-      if (supabaseAnonKey) {
+      if (supabaseUrl && supabaseAnonKey) {
         try {
           const emailRes = await fetch(
             `${supabaseUrl}/functions/v1/send-welcome-email`,
