@@ -56,6 +56,12 @@
       ]
     }
   ],
+  "crons": [
+    {
+      "path": "/api/capi/retry-cron",
+      "schedule": "0 9 * * *"
+    }
+  ],
   "functions": {
     "api/index.ts": {
       "maxDuration": 60

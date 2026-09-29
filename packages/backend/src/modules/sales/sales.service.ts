@@ -3,6 +3,8 @@ import { SupabaseService } from '../../shared/services/supabase.service';
 import { toExclusiveEndDate, toStartOfDayUTC } from '../../shared/helpers/date-range';
 import { PlanLimitsService, SaleDecision } from '../plan-limits/plan-limits.service';
 import { StripeOverageService } from '../stripe/stripe-overage.service';
+import { VisitorMatchingService } from '../tracking/visitor-matching.service';
+import { webhookContext } from '../../shared/helpers/webhook-context';
 
 export interface SalesFilters {
   from?: string;
@@ -28,12 +30,31 @@ export class SalesService {
     private readonly supabase: SupabaseService,
     private readonly planLimits: PlanLimitsService,
     private readonly stripeOverage: StripeOverageService,
+    private readonly visitorMatching: VisitorMatchingService,
   ) {}
 
   async upsertFromWebhook(sale: Record<string, any>): Promise<Record<string, any>> {
+    // O snippet de rastreio escreve sck=stl_<sessao> no link do checkout.
+    // Alguns processors usam o sck como último recurso para achar o ad_id,
+    // e sem esta limpeza o id da sessão ia parar em sales.ad_id. O marcador
+    // vai para o metadata, que é onde o casamento com a visita o procura —
+    // em alguns processors, o ad_id era o único lugar onde ele chegava.
+    if (typeof sale.ad_id === 'string' && sale.ad_id.startsWith('stl_')) {
+      sale = { ...sale, ad_id: null, metadata: { ...(sale.metadata ?? {}), tracking_ref: sale.ad_id } };
+    }
+
+    // O indexador achado no corpo cru do webhook (webhook-context). Cobre as
+    // plataformas cujo processor não guarda o parâmetro em lugar nenhum.
+    const ctx = webhookContext.getStore();
+    if (ctx?.trackingRef && !sale.metadata?.tracking_ref) {
+      sale = { ...sale, metadata: { ...(sale.metadata ?? {}), tracking_ref: ctx.trackingRef } };
+    }
+
     // 1. Status != approved — persist without limit check.
     if (sale.status !== 'approved') {
-      return this.persist(sale);
+      const pending = await this.persist(sale);
+      await this.visitorMatching.matchSale(pending.id);
+      return pending;
     }
 
     // 2. Idempotency — webhook retry doesn't reprocess.
@@ -45,6 +66,15 @@ export class SalesService {
 
     // 5. Persist normal sale.
     const saved = await this.persist(sale);
+
+    // Liga a venda à visita rastreada, se houver. Aguardado, e não
+    // fire-and-forget: na Vercel a função congela quando o webhook responde.
+    // Nunca lança.
+    await this.visitorMatching.matchSale(saved.id);
+
+    // Venda aprovada nova: entra na lista do Purchase da CAPI, enviado quando
+    // o webhook terminar (WebhookQueueService). Venda repetida não chega aqui.
+    ctx?.approvedSaleIds.push(saved.id);
 
     // 6. Register overage if paid plan exceeded and dispatch meter event.
     if (decision.overage) {

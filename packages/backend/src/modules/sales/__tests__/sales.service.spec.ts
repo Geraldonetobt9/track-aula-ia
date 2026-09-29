@@ -3,6 +3,7 @@ import { SalesService } from '../sales.service';
 import { SupabaseService } from '../../../shared/services/supabase.service';
 import { PlanLimitsService } from '../../plan-limits/plan-limits.service';
 import { StripeOverageService } from '../../stripe/stripe-overage.service';
+import { VisitorMatchingService } from '../../tracking/visitor-matching.service';
 
 const mockSupabase = {
   getClient: jest.fn().mockReturnValue({
@@ -27,6 +28,10 @@ const mockStripeOverage = {
   sendMeterEvent: jest.fn().mockResolvedValue(undefined),
 };
 
+const mockVisitorMatching = {
+  matchSale: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('SalesService', () => {
   let service: SalesService;
 
@@ -39,6 +44,7 @@ describe('SalesService', () => {
         { provide: SupabaseService, useValue: mockSupabase },
         { provide: PlanLimitsService, useValue: mockPlanLimits },
         { provide: StripeOverageService, useValue: mockStripeOverage },
+        { provide: VisitorMatchingService, useValue: mockVisitorMatching },
       ],
     }).compile();
 
@@ -273,6 +279,68 @@ describe('SalesService', () => {
       expect(insertOverageSpy).not.toHaveBeenCalled();
       expect(sendMeterMock).not.toHaveBeenCalled();
       expect(invalidateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('upsertFromWebhook (rastreio de visitantes)', () => {
+    beforeEach(() => {
+      (service as any).planLimits = {
+        checkSaleAcceptance: jest.fn().mockResolvedValue({ allowed: true, overage: false }),
+        invalidate: jest.fn().mockResolvedValue(undefined),
+      };
+      jest.spyOn(service as any, 'findByExternalId').mockResolvedValue(null);
+    });
+
+    it('tenta casar a venda aprovada com uma visita depois de gravar', async () => {
+      jest.spyOn(service as any, 'persist').mockResolvedValue({ id: 'sale-9' });
+
+      await service.upsertFromWebhook({ user_id: 'user-1', status: 'approved', external_id: 'ext-9' });
+
+      expect(mockVisitorMatching.matchSale).toHaveBeenCalledWith('sale-9');
+    });
+
+    it('tenta casar tambem a venda pendente', async () => {
+      jest.spyOn(service as any, 'persist').mockResolvedValue({ id: 'sale-p' });
+
+      await service.upsertFromWebhook({ user_id: 'user-1', status: 'pending', external_id: 'ext-p' });
+
+      expect(mockVisitorMatching.matchSale).toHaveBeenCalledWith('sale-p');
+    });
+
+    it('nao casa de novo uma venda repetida (webhook reenviado)', async () => {
+      jest.spyOn(service as any, 'findByExternalId').mockResolvedValue({ id: 'existing' });
+
+      await service.upsertFromWebhook({ user_id: 'user-1', status: 'approved', external_id: 'ext-1' });
+
+      expect(mockVisitorMatching.matchSale).not.toHaveBeenCalled();
+    });
+
+    it('tira o marcador stl_ do ad_id, mas guarda no metadata para o casamento', async () => {
+      const persistSpy = jest.spyOn(service as any, 'persist').mockResolvedValue({ id: 'sale-s' });
+
+      await service.upsertFromWebhook({
+        user_id: 'user-1', status: 'approved', external_id: 'ext-s',
+        ad_id: 'stl_0b7c9f4e-1a2b-4c3d-8e9f-001122334455',
+        metadata: { original_amount: 97 },
+      });
+
+      expect(persistSpy).toHaveBeenCalledWith(expect.objectContaining({
+        ad_id: null,
+        metadata: {
+          original_amount: 97,
+          tracking_ref: 'stl_0b7c9f4e-1a2b-4c3d-8e9f-001122334455',
+        },
+      }));
+    });
+
+    it('mantem o ad_id numerico', async () => {
+      const persistSpy = jest.spyOn(service as any, 'persist').mockResolvedValue({ id: 'sale-n' });
+
+      await service.upsertFromWebhook({
+        user_id: 'user-1', status: 'approved', external_id: 'ext-n', ad_id: '120245519580910309',
+      });
+
+      expect(persistSpy).toHaveBeenCalledWith(expect.objectContaining({ ad_id: '120245519580910309' }));
     });
   });
 

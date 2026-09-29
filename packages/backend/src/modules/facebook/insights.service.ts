@@ -7,8 +7,9 @@ import {
   getAccountCurrency,
 } from '../../shared/helpers/currency';
 import { randomUUID } from 'crypto';
+import { META_API_VERSION } from '../../shared/constants/meta-api';
 
-const FB_API_VERSION = 'v22.0';
+const FB_API_VERSION = META_API_VERSION;
 const FB_GRAPH_URL = `https://graph.facebook.com/${FB_API_VERSION}`;
 
 // ============================================

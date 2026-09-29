@@ -22,13 +22,17 @@ import { StripeModule } from './modules/stripe/stripe.module';
 import { UsersModule } from './modules/users/users.module';
 import { AccountModule } from './modules/account/account.module';
 import { GtmEventsModule } from './modules/gtm-events/gtm-events.module';
+import { TrackingModule } from './modules/tracking/tracking.module';
+import { MetaCapiModule } from './modules/meta-capi/meta-capi.module';
 
 const RATE_LIMIT_TTL_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 60;
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    // Local: o .env do backend, ou o .env.local da raiz (o mesmo que o
+    // frontend lê). Na Vercel nenhum existe e valem as variáveis do projeto.
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env.local'] }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: RATE_LIMIT_TTL_MS, limit: RATE_LIMIT_MAX_REQUESTS }]),
     SharedModule,
@@ -50,6 +54,8 @@ const RATE_LIMIT_MAX_REQUESTS = 60;
     UsersModule,
     AccountModule,
     GtmEventsModule,
+    TrackingModule,
+    MetaCapiModule,
   ],
   providers: [
     {

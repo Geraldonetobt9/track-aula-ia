@@ -36,6 +36,7 @@ const ALL_PLATFORMS: CheckoutPlatform[] = [
   'hotmart', 'kiwify', 'kirvano', 'guru', 'perfectpay', 'ticto', 'payt', 'cakto',
   'hubla', 'cartpanda', 'ggcheckout', 'lastlink',
   'eduzz', 'mundpay', 'monetizze', 'greenn',
+  'wiven', 'frendz', 'herospark', 'kavoo', 'pagtrust', 'assiny', 'yampi', 'wiapy', 'doppus',
 ];
 
 export function PlatformSelectorModal({

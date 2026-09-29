@@ -1,3 +1,4 @@
+import { META_API_VERSION } from '../constants/meta-api';
 // In-memory cache for exchange rates (persists for the lifetime of the application instance)
 const rateCache = new Map<string, { rate: number; fetchedAt: number }>();
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -89,7 +90,7 @@ export function convertFromBRL(brlValue: number, exchangeRate: number): number {
 export async function getAccountCurrency(
   adAccountId: string,
   accessToken: string,
-  fbApiVersion: string = "v22.0"
+  fbApiVersion: string = META_API_VERSION
 ): Promise<string> {
   try {
     const url = `https://graph.facebook.com/${fbApiVersion}/${adAccountId}?fields=currency&access_token=${accessToken}`;

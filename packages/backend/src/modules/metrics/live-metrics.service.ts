@@ -9,8 +9,9 @@ import {
   getAccountCurrency,
 } from '../../shared/helpers/currency';
 import { toExclusiveEndDate, toStartOfDayUTC } from '../../shared/helpers/date-range';
+import { META_API_VERSION } from '../../shared/constants/meta-api';
 
-const FB_API_VERSION = 'v22.0';
+const FB_API_VERSION = META_API_VERSION;
 const FB_GRAPH_URL = `https://graph.facebook.com/${FB_API_VERSION}`;
 
 /** How far back Facebook Insights still returns spend. Bounds any unbounded query. */

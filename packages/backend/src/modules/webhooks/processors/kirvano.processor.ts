@@ -189,6 +189,9 @@ export class KirvanoProcessor {
         sale.created_at ||
         body.created_at ||
         new Date().toISOString(),
+      // Leva o stl_<sessao> que o snippet de rastreio escreve no link do
+      // checkout: é o que liga a venda à visita.
+      metadata: { sck: tracking.sck || null },
     };
 
     // Route through SalesService for plan-limit enforcement

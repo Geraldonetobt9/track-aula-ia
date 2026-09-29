@@ -6,8 +6,20 @@ import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypt
 export class EncryptionService {
   private readonly key: Buffer;
 
+  /**
+   * ENCRYPTION_KEY é opcional: sem ela, a chave sai da service role do
+   * Supabase — uma variável a menos para quem implanta gerar. Continua fora
+   * do banco, então um vazamento do banco sozinho não abre os tokens.
+   *
+   * O custo: trocar a service role (ou definir ENCRYPTION_KEY depois) deixa
+   * ilegíveis os tokens já salvos, e eles precisam ser colados de novo em
+   * Integrações. Quem quer girar a service role sem esse efeito define
+   * ENCRYPTION_KEY desde o início.
+   */
   constructor(private config: ConfigService) {
-    const encKey = this.config.getOrThrow<string>('ENCRYPTION_KEY');
+    const encKey =
+      this.config.get<string>('ENCRYPTION_KEY') ||
+      this.config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY');
     this.key = createHash('sha256').update(encKey).digest();
   }
 

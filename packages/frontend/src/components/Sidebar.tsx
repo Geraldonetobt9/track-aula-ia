@@ -16,6 +16,7 @@ import {
   LogOut,
   Zap,
   Activity,
+  Users,
 } from 'lucide-react';
 import marca7dLogo from '@/assets/marca7d-logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/campaigns', icon: Megaphone, label: 'Campanhas' },
   { to: '/sales', icon: ShoppingCart, label: 'Vendas' },
+  { to: '/tracking', icon: Users, label: 'Visitantes' },
   { to: '/integrations', icon: Link2, label: 'Integrações' },
   { to: '/financial', icon: DollarSign, label: 'Financeiro' },
   { to: '/rules', icon: Zap, label: 'Regras' },

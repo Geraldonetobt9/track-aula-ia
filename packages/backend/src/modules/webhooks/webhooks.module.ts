@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { SharedModule } from '../../shared/shared.module';
 import { SalesModule } from '../sales/sales.module';
+import { MetaCapiModule } from '../meta-capi/meta-capi.module';
 import { WebhooksController } from './webhooks.controller';
 import { WebhooksService } from './webhooks.service';
 import { WebhookQueueService } from './webhook-queue.service';
@@ -21,9 +22,10 @@ import { EduzzProcessor } from './processors/eduzz.processor';
 import { MundpayProcessor } from './processors/mundpay.processor';
 import { MonetizzeProcessor } from './processors/monetizze.processor';
 import { GreennProcessor } from './processors/greenn.processor';
+import { GenericCheckoutProcessor } from './processors/generic/generic-checkout.processor';
 
 @Module({
-  imports: [SharedModule, forwardRef(() => SalesModule)],
+  imports: [SharedModule, MetaCapiModule, forwardRef(() => SalesModule)],
   controllers: [WebhooksController],
   providers: [
     WebhooksService,
@@ -45,6 +47,7 @@ import { GreennProcessor } from './processors/greenn.processor';
     MundpayProcessor,
     MonetizzeProcessor,
     GreennProcessor,
+    GenericCheckoutProcessor,
   ],
   exports: [WebhooksService],
 })

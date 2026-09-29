@@ -360,6 +360,9 @@ export class KiwifyProcessor {
           exchangeRateUsed !== 1.0 ? exchangeRateUsed : undefined,
         converted_amount_brl:
           exchangeRateUsed !== 1.0 ? Number(amount) : undefined,
+        // Leva o stl_<sessao> que o snippet de rastreio escreve no link do
+        // checkout: é o que liga a venda à visita.
+        sck: tracking.sck || null,
       },
     };
 

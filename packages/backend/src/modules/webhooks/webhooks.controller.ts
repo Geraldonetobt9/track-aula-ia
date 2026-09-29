@@ -13,6 +13,7 @@ import { extractWebhookToken } from '../../shared/helpers/extract-webhook-token'
 import { WebhookParamsDto } from './dto/webhook-params.dto';
 import { WebhookQueueService } from './webhook-queue.service';
 import { N8nProfilesProcessor } from './processors/n8n-profiles.processor';
+import { GENERIC_PLATFORMS } from './processors/generic/checkout-specs';
 
 /** Platforms that process synchronously in the controller (not via WebhookQueueService). */
 const CONTROLLER_PROCESSORS: Record<string, true> = {
@@ -25,7 +26,13 @@ const CONTROLLER_PROCESSORS: Record<string, true> = {
  * not a simple token in a header/body field — typically it's a per-payload signature
  * sent via querystring (Kiwify) or custom handler logic (n8n-profiles).
  */
-const SELF_AUTHENTICATING_PLATFORMS = new Set(['kiwify', 'n8n-profiles', 'mundpay']);
+const SELF_AUTHENTICATING_PLATFORMS = new Set([
+  'kiwify',
+  'n8n-profiles',
+  'mundpay',
+  // As dos containers do sGTM: token na URL (?token=), conferido no processor.
+  ...GENERIC_PLATFORMS,
+]);
 
 /** All known platforms (sync + queued). */
 const KNOWN_PLATFORMS = new Set([
@@ -46,6 +53,7 @@ const KNOWN_PLATFORMS = new Set([
   'mundpay',
   'monetizze',
   'greenn',
+  ...GENERIC_PLATFORMS,
 ]);
 
 @SkipThrottle()

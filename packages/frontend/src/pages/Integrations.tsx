@@ -2,6 +2,8 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { FacebookConnectionForm } from '@/components/integrations/FacebookConnectionForm';
 import { CheckoutIntegrationsSection } from '@/components/integrations/CheckoutIntegrationsSection';
 import { UtmPatternCard } from '@/components/integrations/UtmPatternCard';
+import { TrackingSnippetCard } from '@/components/integrations/TrackingSnippetCard';
+import { MetaCapiCard } from '@/components/integrations/MetaCapiCard';
 import { Separator } from '@/components/ui/separator';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,6 +58,13 @@ export default function Integrations() {
 
             {/* Checkout Integrations */}
             <CheckoutIntegrationsSection />
+
+            <Separator />
+
+            {/* Snippet da página de vendas: fecha o elo entre o anúncio e o checkout. */}
+            <TrackingSnippetCard />
+
+            <MetaCapiCard />
 
             {showGtm && (
               <>

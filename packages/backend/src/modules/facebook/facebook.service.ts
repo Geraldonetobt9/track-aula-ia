@@ -12,8 +12,9 @@ import {
   convertFromBRL,
   getAccountCurrency,
 } from '../../shared/helpers/currency';
+import { META_API_VERSION } from '../../shared/constants/meta-api';
 
-const FB_API_VERSION = 'v22.0';
+const FB_API_VERSION = META_API_VERSION;
 
 @Injectable()
 export class FacebookService {

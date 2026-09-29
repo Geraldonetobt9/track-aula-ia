@@ -13,6 +13,7 @@ import { ptBR } from 'date-fns/locale';
 import { SaleWithDetails } from '@/hooks/useSales';
 import { CHECKOUT_PLATFORMS, CheckoutPlatform } from '@/types/checkout';
 import { BarChart3, Code } from 'lucide-react';
+import { SaleJourney } from './SaleJourney';
 
 interface SaleDetailsDrawerProps {
   sale: SaleWithDetails | null;
@@ -289,6 +290,9 @@ export function SaleDetailsDrawer({ sale, open, onOpenChange }: SaleDetailsDrawe
           </div>
 
           <Separator />
+
+          {/* Jornada: só aparece quando a venda foi ligada a uma visita rastreada */}
+          <SaleJourney saleId={sale.id} />
 
           {/* Timeline */}
           <div className="space-y-4">

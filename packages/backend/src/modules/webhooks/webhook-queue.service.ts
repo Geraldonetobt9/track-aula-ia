@@ -18,6 +18,14 @@ import { MundpayProcessor } from './processors/mundpay.processor';
 import { MonetizzeProcessor } from './processors/monetizze.processor';
 import { GreennProcessor } from './processors/greenn.processor';
 import { DiscordLoggerService } from '../../shared/services/discord-logger.service';
+import { MetaCapiService } from '../meta-capi/meta-capi.service';
+import { GenericCheckoutProcessor } from './processors/generic/generic-checkout.processor';
+import { GENERIC_PLATFORMS } from './processors/generic/checkout-specs';
+import {
+  extractTrackingRef,
+  WebhookContext,
+  webhookContext,
+} from '../../shared/helpers/webhook-context';
 
 /** All checkout platforms processed directly (no queue). */
 const QUEUED_PLATFORMS = new Set([
@@ -87,6 +95,8 @@ export class WebhookQueueService {
     @Inject(forwardRef(() => GreennProcessor))
     private readonly greenn: GreennProcessor,
     private readonly discordLogger: DiscordLoggerService,
+    private readonly metaCapi: MetaCapiService,
+    private readonly generic: GenericCheckoutProcessor,
   ) {}
 
   /**
@@ -103,7 +113,33 @@ export class WebhookQueueService {
   async processDirect(
     data: WebhookQueuePayload,
   ): Promise<{ status: number; body: any }> {
+    // O processor roda dentro do contexto: SalesService lê dali o indexador
+    // do rastreio e anota as vendas aprovadas. Terminado o processor, sai um
+    // Purchase por pedido para a CAPI — aguardado, porque na Vercel nada roda
+    // depois da resposta. sendPurchases nunca lança.
+    const ctx: WebhookContext = {
+      trackingRef: extractTrackingRef(data.rawBody ?? JSON.stringify(data.body ?? {})),
+      approvedSaleIds: [],
+    };
+    return webhookContext.run(ctx, async () => {
+      const result = await this.dispatchDirect(data);
+      if (ctx.approvedSaleIds.length > 0) {
+        await this.metaCapi.sendPurchases(ctx.approvedSaleIds);
+      }
+      return result;
+    });
+  }
+
+  private async dispatchDirect(
+    data: WebhookQueuePayload,
+  ): Promise<{ status: number; body: any }> {
     const { platform, body, authToken, headers, rawBody, queryParams } = data;
+
+    // As plataformas que vieram dos containers do sGTM: um processor só,
+    // dirigido por especificação (processors/generic/checkout-specs.ts).
+    if (GENERIC_PLATFORMS.has(platform)) {
+      return this.generic.process(platform, body, authToken, queryParams ?? {});
+    }
 
     const processorMap: Record<string, any> = {
       hotmart: this.hotmart,

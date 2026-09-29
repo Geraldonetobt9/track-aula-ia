@@ -61,6 +61,7 @@ const Settings = lazyWithReload(() => import("./pages/Settings"));
 const Financial = lazyWithReload(() => import("./pages/Financial"));
 const Rules = lazyWithReload(() => import("./pages/Rules"));
 const Events = lazyWithReload(() => import("./pages/Events"));
+const Tracking = lazyWithReload(() => import("./pages/Tracking"));
 const Terms = lazyWithReload(() => import("./pages/Terms"));
 const Privacy = lazyWithReload(() => import("./pages/Privacy"));
 const NotFound = lazyWithReload(() => import("./pages/NotFound"));
@@ -126,6 +127,7 @@ const App = () => (
                         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                         <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
                         <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+                        <Route path="/tracking" element={<ProtectedRoute><Tracking /></ProtectedRoute>} />
                         <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                         <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
                         <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />

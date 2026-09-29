@@ -1,149 +1,181 @@
-# Dashboard Anibal
+# Dashboard de Tracking
 
-Dashboard de ROI de Facebook Ads: cruza o gasto de mídia com as vendas reais dos checkouts brasileiros.
+Painel de ROI de Facebook Ads: cruza o gasto de mídia com as vendas reais dos checkouts brasileiros, rastreia os visitantes da página de vendas e manda PageView, InitiateCheckout e Purchase para a API de Conversões do Meta — tudo server-side, no domínio do cliente.
 
-Versão enxuta: um projeto só, sem workspaces, sem planos e sem cobrança.
+**Implantar leva uns 20 minutos, em 4 etapas.** Você precisa de conta no [Supabase](https://supabase.com), no [GitHub](https://github.com) e na [Vercel](https://vercel.com) (as três grátis), e acesso ao DNS do domínio do site.
 
-## Diferenças principais
-
-**Contas criadas só pelo admin.** Não existe página de registro. As contas são criadas à mão no painel do Supabase, e quem entra vê os mesmos dados — não há separação por usuário nem papéis.
-
-**Conexão com o Meta por token.** O cliente cola o access token na tela de Integrações e o sistema descobre as contas de anúncio sozinho. Não existe mais app do Facebook, OAuth, `APP_ID` nem `APP_SECRET` para configurar.
-
-**Um deploy só.** Frontend e API rodam juntos na Vercel.
-
-## Telas
-
-| Tela | Situação |
-|---|---|
-| Login | sem link para registro |
-| Dashboard | |
-| Campanhas | |
-| Vendas | |
-| Financeiro | |
-| Regras de automação | |
-| Integrações | conexão do Meta por token + checkouts |
-| Configurações | |
-
-Sem página de registro, sem aba VTurb, sem aba Eventos, sem painel admin.
-
-## Fases
-
-| # | Fase | Situação |
+| Etapa | Onde | O que sai dela |
 |---|---|---|
-| 1 | Criação do banco de dados | ✅ pronta |
-| 2 | Deploy no GitHub | ⏳ `anibal-riveros/dashboard-anibal` |
-| 3 | Deploy na Vercel | ⏳ |
+| [1. Banco de dados](#etapa-1--banco-de-dados-supabase) | Supabase | o banco pronto e 3 chaves copiadas |
+| [2. Código no GitHub](#etapa-2--código-no-github) | GitHub | o repositório com o código |
+| [3. Publicar](#etapa-3--publicar-vercel) | Vercel | o painel no ar |
+| [4. Seu domínio](#etapa-4--seu-domínio) | Vercel + DNS | `painel.seudominio.com.br` servindo painel, rastreio e webhooks |
 
 ---
 
-## Fase 1 — Criação do banco de dados
+## Etapa 1 — Banco de dados (Supabase)
 
-### 1. Criar o projeto no Supabase
+**1.1 Criar o projeto.** Em [supabase.com/dashboard](https://supabase.com/dashboard) → **New project**. Região **South America (São Paulo)**. Guarde a senha do banco em algum lugar.
 
-Em [supabase.com/dashboard](https://supabase.com/dashboard), **New project**. Região **South America (São Paulo)**, para ficar perto dos usuários. Guarde a senha do banco.
+**1.2 Rodar o SQL inteiro.** No menu lateral, **SQL Editor** → **New query**. Abra o arquivo
 
-### 2. Aplicar o schema
-
-SQL Editor do painel: cole `supabase/schema_completo.sql` inteiro e execute uma vez.
-
-Ou, se preferir em partes, os arquivos de `supabase/migrations/` na ordem, do `0001` ao `0010`. Pelo CLI:
-
-```bash
-supabase link --project-ref SEU_REF
-supabase db push
+```
+supabase/schema_completo.sql
 ```
 
-> **Já aplicou a versão anterior, de 22 tabelas?** Rode `supabase/atualizacao_banco.sql` uma vez. Ele remove `gtm_events` e `app_secrets` (que saíram com as abas de Eventos e VTurb) e troca o dono único pela lista `app_users`, preservando o usuário que você já criou.
+copie **tudo** (Ctrl+A, Ctrl+C), cole no editor e clique **Run**. Espere o `Success`. É uma vez só, num projeto novo e vazio — o arquivo cria as 22 tabelas, as regras de acesso e as rotinas de limpeza.
 
-### 3. Fechar o cadastro
+> Deu erro porque o banco já tinha algo? Rode `supabase/reset.sql` e depois o `schema_completo.sql` de novo.
 
-**Authentication → Providers → Email**: desligue **Enable signups**.
+**1.3 Fechar o cadastro.** **Authentication** → **Sign In / Providers** → **Email**: desligue **Allow new users to sign up** e salve. Só quem você criar consegue entrar.
 
-É o que garante que só o admin cria contas. Sem isso, qualquer pessoa com a chave anon poderia se cadastrar e entrar.
+**1.4 Criar o seu usuário.** **Authentication** → **Users** → **Add user** → **Create new user**: seu e-mail, uma senha, e **Auto Confirm User** marcado.
 
-### 4. Criar os usuários
+**1.5 Copiar as chaves.** **Project Settings** (engrenagem) → **API Keys** → aba **Legacy API Keys**, e **Data API** para a URL:
 
-**Authentication → Users → Add user**, com o e-mail da pessoa e **Auto Confirm User** ligado. Repita para cada pessoa que precisar de acesso.
+| No Supabase | Copie para a variável |
+|---|---|
+| Project URL (`https://xxxx.supabase.co`) | `SUPABASE_URL` |
+| `anon` `public` | `SUPABASE_ANON_KEY` |
+| `service_role` (clique em **Reveal**) | `SUPABASE_SERVICE_ROLE_KEY` |
 
-O trigger `register_new_user` registra cada uma em `app_users` na hora. Confira em **Table Editor → app_users**.
+Deixe as três num bloco de notas, neste formato — é o que você vai colar na Vercel na Etapa 3:
 
-Para tirar o acesso de alguém sem apagar a conta, marque `is_active = false` nessa tabela.
-
-### 5. Preencher as credenciais
-
-```bash
-cp .env.example .env.local
+```
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+ADMIN_EMAILS=seu@email.com
 ```
 
-Preencha com os dados de **Settings → API** do seu projeto. Gere as duas chaves de criptografia:
+`ADMIN_EMAILS` é o e-mail do usuário que você criou no 1.4. Quem estiver nela cria os outros usuários pelo próprio painel.
+
+> A `service_role` abre o banco inteiro. Ela vai **só** na Vercel — nunca no código, nunca num arquivo que vá para o GitHub, nunca com prefixo `VITE_`.
+
+---
+
+## Etapa 2 — Código no GitHub
+
+**2.1 Criar o repositório.** Em [github.com/new](https://github.com/new): um nome (ex.: `painel-tracking`), **Private**, e **nada** marcado embaixo (sem README, sem .gitignore). **Create repository.** Copie a URL que aparece, `https://github.com/SEU-USUARIO/painel-tracking.git`.
+
+**2.2 Enviar o código.** Abra um terminal **dentro desta pasta** e rode, trocando a URL pela sua:
+
+```bash
+git init -b main
+git add -A
+git commit -m "Primeira versão"
+git remote remove origin
+git remote add origin https://github.com/SEU-USUARIO/painel-tracking.git
+git push -u origin main
+```
+
+O `git remote remove origin` pode responder `error: No such remote` — tudo bem, é só porque a pasta veio sem remoto. Os arquivos de senha (`.env*`) nunca sobem: o `.gitignore` já barra.
+
+Atualizar depois é só `git add -A`, `git commit -m "..."` e `git push`: a Vercel publica sozinha a cada push.
+
+---
+
+## Etapa 3 — Publicar (Vercel)
+
+**3.1 Importar.** Em [vercel.com/new](https://vercel.com/new) → **Import** no repositório da Etapa 2 (na primeira vez, autorize a Vercel a ver seus repositórios do GitHub).
+
+**3.2 Não mexa em Framework, Build nem Output.** O `vercel.json` do projeto já define tudo, inclusive a região São Paulo.
+
+**3.3 Variáveis.** Abra **Environment Variables** e cole o bloco da Etapa 1.5 inteiro no primeiro campo — a Vercel separa as quatro sozinha.
+
+**3.4 Deploy.** Clique **Deploy** e espere uns 3 minutos. Para conferir, abra
+
+```
+https://SEU-PROJETO.vercel.app/health
+```
+
+Tem que aparecer `"status":"ok"`. Se aparecer `degraded`, alguma chave do Supabase está errada: corrija em **Settings → Environment Variables** e faça **Redeploy** (aba Deployments → ⋯ → Redeploy).
+
+---
+
+## Etapa 4 — Seu domínio
+
+O **único** ponto de DNS. Um subdomínio aponta para a Vercel e passa a servir o painel, o código de rastreio e os webhooks dos checkouts. Isso é o que deixa o rastreio *first-party*: as requisições saem do domínio do próprio site, com o IP real do visitante, e bloqueador de anúncio não barra.
+
+Use um subdomínio **do mesmo domínio da página de vendas**. Página em `seudominio.com.br` → `painel.seudominio.com.br`.
+
+**4.1 Na Vercel.** Projeto → **Settings** → **Domains** → digite `painel.seudominio.com.br` → **Add**.
+
+**4.2 No DNS.** Onde o domínio é gerenciado (Registro.br, Cloudflare, Hostinger, GoDaddy…), crie:
+
+| Tipo | Nome | Valor |
+|---|---|---|
+| `CNAME` | `painel` | `cname.vercel-dns.com` |
+
+No **Cloudflare**, deixe a nuvem **cinza** (*DNS only*). Com a nuvem laranja a Vercel não emite o certificado.
+
+**4.3 Esperar.** Em alguns minutos a Vercel mostra **Valid Configuration** ao lado do domínio.
+
+**4.4 Avisar o Supabase.** **Authentication** → **URL Configuration**:
+- **Site URL:** `https://painel.seudominio.com.br`
+- **Redirect URLs** → **Add URL:** `https://painel.seudominio.com.br/**`
+
+É o que faz o link de "esqueci minha senha" voltar para o painel certo.
+
+**4.5 Pronto.** Entre em `https://painel.seudominio.com.br` com o usuário da Etapa 1.4 e use sempre esse endereço. Em **Integrações**, o código de rastreio e as URLs de webhook já saem com o seu domínio — não há mais nada de domínio para configurar.
+
+---
+
+## Depois de entrar: Integrações
+
+Tudo pela tela, nesta ordem:
+
+1. **Facebook Ads** — cole o access token do Meta; as contas de anúncio aparecem sozinhas.
+2. **Checkouts** — escolha a plataforma e siga as instruções da própria tela (URL do webhook + token).
+3. **Rastreio de visitantes** — escolha a plataforma de checkout e copie o código para antes do `</body>` da página de vendas.
+4. **API de Conversões do Meta** — ID do pixel e token de acesso. Para testar, preencha o código de teste e veja os eventos em *Eventos de teste* no Gerenciador de Eventos; apague o código depois.
+
+---
+
+## Opcionais
+
+Variáveis que você pode acrescentar na Vercel depois (Settings → Environment Variables, e Redeploy):
+
+| Variável | Para quê |
+|---|---|
+| `CRON_SECRET` | Reenvio automático, uma vez por dia, dos eventos que o Meta recusou. Sem ela, o reenvio é pelo botão em Integrações. |
+| `ENCRYPTION_KEY` | Chave que cifra os tokens salvos. Sem ela, é derivada da `service_role`. Defina **desde o início** se um dia for trocar a `service_role`: trocar a chave depois obriga a colar os tokens de novo. |
+
+Para gerar um valor aleatório para qualquer uma das duas:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-`.env.local` está no `.gitignore` e nunca vai para o GitHub.
+---
 
-### 6. Conferir
+## Já tem o painel no ar e está atualizando?
 
-Em **Database → Tables**: 20 tabelas, todas com *RLS enabled* marcado.
+Não rode o `schema_completo.sql` — ele é para banco vazio. No SQL Editor, rode só as migrations novas, nesta ordem:
 
-Teste rápido de que o vazamento está barrado — com a chave **anon**, sem login:
+1. `supabase/migrations/20260928000000_rastreio_de_visitantes.sql`
+2. `supabase/migrations/20260929000000_meta_capi.sql`
+3. `supabase/migrations/20260929100000_plataformas_dos_containers.sql`
 
-```bash
-curl "$VITE_SUPABASE_URL/rest/v1/meta_credentials" \
-  -H "apikey: $VITE_SUPABASE_ANON_KEY"
-```
-
-Tem que voltar `[]` ou erro de permissão. Se voltar dados, **pare** e revise `0010_rls_policies.sql`.
+Depois, `git push` para a Vercel publicar o código novo.
 
 ---
 
-## Fase 2 — Deploy no GitHub
+## Problemas comuns
 
-A fazer. Repositório de destino: `https://github.com/anibal-riveros/dashboard-anibal.git`
-
-## Fase 3 — Deploy na Vercel
-
-### 1. Importar o repositório
-
-Em [vercel.com/new](https://vercel.com/new), importe `anibal-riveros/dashboard-anibal`.
-
-A Vercel detecta Vite sozinha, e o `vercel.json` já fixa build, região `gru1` (São Paulo), rewrite de SPA e os headers de segurança. Não mude nada na tela de configuração.
-
-### 2. Cadastrar as variáveis de ambiente
-
-Antes do primeiro deploy, em **Environment Variables**, cadastre para *Production*, *Preview* e *Development*. Os valores são os mesmos do seu `.env.local`:
-
-| Variável | Natureza |
+| Sintoma | Causa provável |
 |---|---|
-| `SUPABASE_URL` | servidor |
-| `SUPABASE_SERVICE_ROLE_KEY` | **secreta** — ignora RLS |
-| `SUPABASE_JWT_SECRET` | **secreta** |
-| `ENCRYPTION_KEY` | **secreta** — cifra os tokens |
-| `VITE_SUPABASE_URL` | pública, entra no bundle |
-| `VITE_SUPABASE_ANON_KEY` | pública, entra no bundle |
-| `META_API_VERSION` | servidor |
-| `APP_URL` | a URL da Vercel, depois do primeiro deploy |
-
-As `VITE_` precisam existir **antes** do build: elas são embutidas no JavaScript, não lidas em tempo de execução. Se faltar uma, o site sobe e quebra no navegador.
-
-Nunca cadastre a `SUPABASE_SERVICE_ROLE_KEY` com prefixo `VITE_`. Isso a publicaria no bundle e daria acesso total ao banco para qualquer visitante.
-
-### 3. Deploy e verificação
-
-Depois que o deploy terminar:
-
-```bash
-curl https://SEU-APP.vercel.app/api/health
-```
-
-Esperado: `{"status":"ok","database":"ok"}`. Se vier `degraded`, as variáveis do Supabase estão erradas.
-
-Depois entre no dashboard com o e-mail cadastrado e vá em **Integrações** para colar o token do Meta.
+| Tela branca ao abrir o painel | `SUPABASE_URL` ou `SUPABASE_ANON_KEY` ausente na Vercel. Cadastre e faça **Redeploy** — elas entram no build. |
+| `/health` responde `degraded` | `SUPABASE_SERVICE_ROLE_KEY` errada, ou o SQL da Etapa 1.2 não rodou. |
+| Login diz credencial inválida | Usuário criado sem **Auto Confirm User**. Recrie com a opção marcada. |
+| Não aparece a aba de criar usuários | Seu e-mail não está em `ADMIN_EMAILS`. |
+| Domínio fica em *Invalid Configuration* | CNAME com nome ou valor errado, ou nuvem laranja no Cloudflare. |
+| "Esqueci minha senha" leva para outro endereço | Etapa 4.4 pendente. |
 
 ---
 
 ## Documentação
 
-- [`docs/BANCO_DE_DADOS.md`](docs/BANCO_DE_DADOS.md) — schema, decisões de índice e o modelo de segurança
+- [`docs/features/`](docs/features/README.md) — cada funcionalidade, com regras de negócio e testes
+- [`docs/features/18-visitor-tracking/meta-capi.md`](docs/features/18-visitor-tracking/meta-capi.md) — rastreio, API de Conversões e as plataformas de checkout
+- `supabase/migrations/` — o histórico do banco; `node scripts/gerar-schema.js` regenera o `schema_completo.sql` a partir delas

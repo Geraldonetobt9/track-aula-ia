@@ -34,6 +34,8 @@ Cada documento segue o [template padrao](TEMPLATE.md). Consulte o [glossario](GL
 |-----|-----------|
 | [Vendas](05-sales/sales.md) | Listagem, filtros, detalhes de vendas |
 | [Atribuicao de Vendas](05-sales/sale-attribution.md) | Logica de matching UTM → anuncio |
+| [Rastreio de Visitantes](18-visitor-tracking/visitor-tracking.md) | Snippet da pagina de vendas, funil, jornada do comprador |
+| [API de Conversoes do Meta](18-visitor-tracking/meta-capi.md) | PageView, InitiateCheckout e Purchase pelo servidor, no subdominio do cliente |
 
 ### Core — Financeiro
 | Doc | Descricao |
