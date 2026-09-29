@@ -18,7 +18,7 @@ import {
   Activity,
   Users,
 } from 'lucide-react';
-import marca7dLogo from '@/assets/marca7d-logo.png';
+import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { isOperatorEmail } from '@/lib/featureAccess';
 
@@ -54,7 +54,7 @@ export function Sidebar({ onNavClick, onCollapsedChange }: { onNavClick?: () => 
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-foreground/5 px-4">
           {!collapsed && (
-            <img src={marca7dLogo} alt="Marca 7 Dígitos" className="h-12" />
+            <Logo />
           )}
           <Button
             variant="ghost"

@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import marca7dLogo from '@/assets/marca7d-logo.png';
+import { Logo } from '@/components/Logo';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -75,7 +75,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <img src={marca7dLogo} alt="Marca 7 Dígitos" className="h-8" />
+          <Logo />
           <div className="ml-auto">
             <ThemeToggle />
           </div>

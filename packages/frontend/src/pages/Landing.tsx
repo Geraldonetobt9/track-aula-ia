@@ -14,7 +14,7 @@ import {
   ArrowRight,
   Facebook
 } from 'lucide-react';
-import marca7dLogo from '@/assets/marca7d-logo.png';
+import { Logo } from '@/components/Logo';
 
 export default function Landing() {
   return (
@@ -23,7 +23,7 @@ export default function Landing() {
       <header className="border-b border-border">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/">
-            <img src={marca7dLogo} alt="Marca 7 Dígitos" className="h-8" />
+            <Logo />
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/login">
@@ -69,7 +69,7 @@ export default function Landing() {
       <section className="border-t border-border bg-card/50 py-20">
         <div className="container mx-auto px-4">
           <h2 className="mb-12 text-center text-3xl font-bold">
-            Por que usar o Sentinela?
+            Por que usar o Painel de Tracking?
           </h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Card className="border-border bg-card">
@@ -300,10 +300,10 @@ export default function Landing() {
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger>
-                O que é o Sentinela?
+                O que é o Painel de Tracking?
               </AccordionTrigger>
               <AccordionContent>
-                O Sentinela é uma plataforma que cruza dados de vendas dos seus checkouts 
+                O Painel de Tracking é uma plataforma que cruza dados de vendas dos seus checkouts 
                 (Hotmart, Kiwify, Kirvano) com as métricas das suas campanhas de Facebook Ads, 
                 permitindo que você saiba exatamente qual anúncio gerou cada venda.
               </AccordionContent>
@@ -370,7 +370,7 @@ export default function Landing() {
       <footer className="border-t border-border py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <img src={marca7dLogo} alt="Marca 7 Dígitos" className="h-8" />
+            <Logo />
             <div className="flex gap-6 text-sm text-muted-foreground">
               <Link to="/terms" className="hover:text-foreground">
                 Termos de Uso
@@ -380,7 +380,7 @@ export default function Landing() {
               </Link>
             </div>
             <div className="text-sm text-muted-foreground">
-              © 2024 Sentinela. Todos os direitos reservados.
+              © Painel de Tracking.
             </div>
           </div>
         </div>

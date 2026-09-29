@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import marca7dLogo from '@/assets/marca7d-logo.png';
+import { Logo } from '@/components/Logo';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -161,7 +161,7 @@ export default function ResetPassword() {
 
       <div className="relative z-10 w-full max-w-sm px-4 animate-sentinel-in">
         <div className="mb-10 text-center">
-          <img src={marca7dLogo} alt="Marca 7 Dígitos" className="mx-auto h-16" />
+          <Logo size="lg" className="justify-center" />
           <p className="mt-2 text-sm text-muted-foreground/60">Defina sua nova senha</p>
         </div>
 

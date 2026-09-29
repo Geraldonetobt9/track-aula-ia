@@ -44,7 +44,7 @@ export class EmailService {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bem-vindo ao Sentinela</title>
+  <title>Bem-vindo ao Painel de Tracking</title>
   <style>
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     body { margin: 0; padding: 0; width: 100% !important; background-color: #050505; }
@@ -63,7 +63,6 @@ export class EmailService {
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="560" class="container" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding-bottom:32px;">
-              <img src="${siteUrl}/marca7d-logo.png" alt="Marca 7 Dígitos" height="48" style="height:48px;width:auto;">
             </td>
           </tr>
           <tr>
@@ -78,7 +77,7 @@ export class EmailService {
                         </td>
                       </tr>
                     </table>
-                    <h1 class="hero-title" style="color:#ffffff;font-size:28px;font-weight:700;line-height:34px;margin:20px 0 12px;">Bem-vindo ao Sentinela</h1>
+                    <h1 class="hero-title" style="color:#ffffff;font-size:28px;font-weight:700;line-height:34px;margin:20px 0 12px;">Bem-vindo ao Painel de Tracking</h1>
                     <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:22px;margin:0 0 28px;">Sua conta est&aacute; pronta. Use os dados abaixo para acessar a plataforma e come&ccedil;ar a rastrear suas vendas.</p>
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                       <tr>
@@ -112,7 +111,7 @@ export class EmailService {
           </tr>
           <tr>
             <td align="center" style="padding:24px 0;">
-              <p style="color:rgba(255,255,255,0.3);font-size:12px;margin:0 0 4px;">Sentinela Tracker &mdash; Rastreamento inteligente de vendas</p>
+              <p style="color:rgba(255,255,255,0.3);font-size:12px;margin:0 0 4px;">Painel de Tracking &mdash; Rastreamento de vendas</p>
               <p style="color:rgba(255,255,255,0.2);font-size:11px;margin:0;">Este &eacute; um email autom&aacute;tico. Se n&atilde;o solicitou esta conta, ignore este email.</p>
             </td>
           </tr>
@@ -134,7 +133,7 @@ export class EmailService {
       body: JSON.stringify({
         from: 'Sentinela Tracker <noreply@contato.sentinelatracker.com.br>',
         to: [email],
-        subject: `Bem-vindo ao Sentinela, ${displayName}!`,
+        subject: `Bem-vindo ao Painel de Tracking, ${displayName}!`,
         html: htmlContent,
       }),
     });
