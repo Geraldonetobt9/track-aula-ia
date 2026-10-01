@@ -100,7 +100,7 @@ export function PlanCards() {
           const features = rule ? buildFeatures(rule) : [];
 
           const borderClass = isCurrent
-            ? 'border-primary/60 bg-gradient-to-b from-primary/[0.04] to-transparent'
+            ? 'border-primary/60'
             : display.highlighted
             ? 'border-foreground/20'
             : 'border-foreground/10';

@@ -71,7 +71,7 @@ export default function Login() {
           <p className="mt-2 text-sm text-muted-foreground">Acesse seu painel de controle</p>
         </div>
 
-        <div className="liquid-glass rounded-2xl border border-border/60 bg-card/75 p-6 shadow-xl">
+        <div className="liquid-glass rounded-lg p-6">
           {emailChanged && (
             <div
               className="mb-4 rounded-md border border-accent-readable/30 bg-primary/10 px-4 py-3 text-sm"

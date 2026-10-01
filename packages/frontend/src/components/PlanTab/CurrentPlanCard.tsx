@@ -89,11 +89,7 @@ export function CurrentPlanCard() {
     : 'Plano gratuito';
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-foreground/10 bg-gradient-to-br from-muted to-card p-7">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-primary/10 blur-2xl"
-      />
+    <div className="relative overflow-hidden rounded-lg border border-border bg-card p-7">
 
       <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
