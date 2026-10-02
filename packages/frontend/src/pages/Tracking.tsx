@@ -4,12 +4,9 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { DateRangeFilter, DateRange, getDefaultDateRange } from '@/components/DateRangeFilter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Code2, Eye, EyeOff } from 'lucide-react';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import {
-  TrackingBreakdownBy,
-  useTrackingBreakdown,
   useTrackingByPage,
   useTrackingStats,
   useTrackingStatus,
@@ -22,13 +19,11 @@ import { CapiEventsCard } from '@/components/tracking/CapiEventsCard';
 
 export default function Tracking() {
   const [dateRange, setDateRange] = useState<DateRange>(() => getDefaultDateRange());
-  const [origin, setOrigin] = useState<Exclude<TrackingBreakdownBy, 'page'>>('source');
   const { isHidden, toggle } = usePrivacyMode();
 
   const { data, loading, error } = useTrackingStats(dateRange);
   const { status } = useTrackingStatus();
   const pages = useTrackingByPage(dateRange);
-  const origins = useTrackingBreakdown(origin, dateRange);
 
   // Nunca chegou evento: a página inteira seria zeros. Melhor dizer o que falta.
   const neverTracked = !loading && status !== null && status.lastEventAt === null;
@@ -109,29 +104,6 @@ export default function Tracking() {
                   loading={pages.loading}
                   keyLabel="Página"
                   isUrl
-                  blurValues={isHidden}
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between space-y-0">
-                <div className="space-y-1.5">
-                  <CardTitle>Origens</CardTitle>
-                  <CardDescription>De onde vieram os visitantes, pelas UTMs da chegada.</CardDescription>
-                </div>
-                <Tabs value={origin} onValueChange={(v) => setOrigin(v as typeof origin)}>
-                  <TabsList>
-                    <TabsTrigger value="source">utm_source</TabsTrigger>
-                    <TabsTrigger value="campaign">utm_campaign</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </CardHeader>
-              <CardContent>
-                <TrackingBreakdownTable
-                  rows={origins.rows}
-                  loading={origins.loading}
-                  keyLabel={origin === 'source' ? 'Origem' : 'Campanha'}
                   blurValues={isHidden}
                 />
               </CardContent>
