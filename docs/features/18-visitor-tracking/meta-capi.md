@@ -45,9 +45,9 @@ Tudo no subdominio do cliente (`track.loja.com.br`) apontado para o projeto na V
 | RN-02 | Parametro ja usado pelo cliente | Nao e trocado — exceto `utm_term`, que e a unica chave dessas plataformas |
 | RN-03 | event_id | UUID gerado na pagina para PageView e InitiateCheckout; `purchase:<pedido>` no Purchase |
 | RN-04 | Espelho no navegador | Ligado: o snippet chama `fbq('track', ..., {}, {eventID})` com o mesmo id, e o Meta deduplica. Exige tirar o `fbq('track','PageView')` do codigo base do pixel |
-| RN-05 | user_data | em, ph (com 55), fn, ln, ct, st, zp, country e external_id em SHA-256 normalizado; IP, user agent, fbp e fbc em claro |
+| RN-05 | user_data | em, ph (com 55), fn, ln, st, zp, country e external_id em SHA-256 normalizado; IP, user agent, fbp e fbc em claro. Cidade (ct) não vai em nenhum evento |
 | RN-06 | external_id | SHA-256 do `_stl_vid` — o mesmo nos tres eventos |
-| RN-07 | Cidade/estado | Do comprador (webhook); na falta, da geolocalizacao do IP |
+| RN-07 | Estado | Do comprador (webhook); na falta, da geolocalizacao do IP. A cidade fica só na sessão, para relatórios |
 | RN-08 | Purchase sem visita | Sai mesmo assim, so com os dados do comprador |
 | RN-09 | Purchase duplicado | `capi_events` UNIQUE (area, evento, event_id): reserva antes de enviar; webhook reentregue nao reenvia |
 | RN-10 | Compra antiga | `event_time` > 7 dias (limite do Meta) vira a hora do envio |

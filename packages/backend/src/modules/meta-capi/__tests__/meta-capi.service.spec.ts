@@ -117,7 +117,6 @@ describe('MetaCapiService', () => {
         fbp: base.fbp,
         fbc: base.fbc,
         external_id: [sha256(VID)],
-        ct: [sha256('saopaulo')],
         st: [sha256('sp')],
         country: [sha256('br')],
       });
@@ -224,7 +223,6 @@ describe('MetaCapiService', () => {
         ph: [sha256('5511987654321')],
         fn: [sha256('maria')],
         ln: [sha256('silva')],
-        ct: [sha256('campinas')], // cidade do comprador vence a do IP
         st: [sha256('sp')],
         client_ip_address: '200.1.2.3',
         client_user_agent: 'Mozilla/5.0 (iPhone)',

@@ -1,6 +1,6 @@
 import {
   buildUserData,
-  normalizeCity,
+  explainUserData,
   normalizeCountry,
   normalizeEmail,
   normalizePhone,
@@ -29,7 +29,6 @@ describe('normalizacao para a CAPI', () => {
   });
 
   it('cidade sem acento e sem espaco, estado em sigla, pais em duas letras', () => {
-    expect(normalizeCity('São Paulo')).toBe('saopaulo');
     expect(normalizeState('SP')).toBe('sp');
     expect(normalizeState('São Paulo')).toBeNull(); // nome por extenso nao casa
     expect(normalizeCountry('BRA')).toBe('br');
@@ -41,7 +40,6 @@ describe('normalizacao para a CAPI', () => {
       email: 'Maria@Gmail.com',
       phone: '11987654321',
       fullName: 'Maria Silva',
-      city: 'São Paulo',
       state: 'SP',
       country: 'BR',
       zip: '01310-100',
@@ -56,7 +54,7 @@ describe('normalizacao para a CAPI', () => {
     expect(ud.ph).toEqual([sha256('5511987654321')]);
     expect(ud.fn).toEqual([sha256('maria')]);
     expect(ud.ln).toEqual([sha256('silva')]);
-    expect(ud.ct).toEqual([sha256('saopaulo')]);
+    expect(ud.ct).toBeUndefined(); // cidade não vai
     expect(ud.st).toEqual([sha256('sp')]);
     expect(ud.zp).toEqual([sha256('01310100')]);
     expect(ud.country).toEqual([sha256('br')]);
@@ -69,5 +67,22 @@ describe('normalizacao para a CAPI', () => {
 
   it('campo vazio nao vai', () => {
     expect(buildUserData({ email: null, ip: null })).toEqual({});
+  });
+
+  it('explica cada campo: original, normalizado, o que saiu e se o hash confere', () => {
+    const input = { email: 'Maria@Gmail.com', fullName: 'Maria Silva', ip: '200.1.2.3' };
+    const sent = buildUserData(input);
+    const rows = explainUserData(input, sent);
+    const em = rows.find((r) => r.key === 'em')!;
+    expect(em).toMatchObject({ original: 'Maria@Gmail.com', normalized: 'maria@gmail.com', sent: sha256('maria@gmail.com'), hashed: true, matches: true });
+    expect(rows.find((r) => r.key === 'ln')).toMatchObject({ original: 'Maria Silva', normalized: 'silva', matches: true });
+    expect(rows.find((r) => r.key === 'client_ip_address')).toMatchObject({ original: '200.1.2.3', sent: '200.1.2.3', hashed: false, matches: true });
+  });
+
+  it('explica sem conferir quando o dado mudou desde o envio', () => {
+    const sent = buildUserData({ email: 'antigo@gmail.com' });
+    const [em] = explainUserData({ email: 'novo@gmail.com' }, sent);
+    expect(em.matches).toBe(false);
+    expect(em.original).toBe('novo@gmail.com');
   });
 });

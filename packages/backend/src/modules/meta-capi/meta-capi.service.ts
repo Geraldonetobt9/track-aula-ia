@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../shared/services/supabase.service';
 import { CacheService } from '../../shared/services/cache.service';
 import { EncryptionService } from '../../shared/services/encryption.service';
-import { buildUserData, MetaUserData } from './meta-user-data';
+import { buildUserData, MetaUserData, explainUserData, UserDataInput } from './meta-user-data';
 import { META_API_VERSION } from '../../shared/constants/meta-api';
 
 const GRAPH_VERSION = META_API_VERSION;
@@ -163,7 +163,6 @@ export class MetaCapiService {
           userAgent: e.userAgent,
           fbp: e.fbp,
           fbc: e.fbc,
-          city: e.city,
           state: e.region,
           country: e.country,
         }),
@@ -252,8 +251,6 @@ export class MetaCapiService {
     const soldAt = Math.floor(new Date(first.sold_at).getTime() / 1000);
     const now = nowSeconds();
     const value = lines.reduce((sum, l) => sum + Number(l.amount || 0), 0);
-    const zip = first.metadata?.zipcode ?? first.metadata?.zip ?? first.metadata?.cep ?? null;
-
     const event: MetaEvent = {
       event_name: 'Purchase',
       // Pagamento de boleto/pix pode chegar dias depois; fora da janela do
@@ -262,20 +259,7 @@ export class MetaCapiService {
       event_id: `purchase:${orderId}`,
       action_source: 'website',
       ...(session?.landing_page ? { event_source_url: session.landing_page } : {}),
-      user_data: buildUserData({
-        email: first.customer_email,
-        phone: first.customer_phone,
-        fullName: first.customer_name,
-        city: first.customer_city ?? session?.city,
-        state: first.customer_state ?? session?.region,
-        country: first.customer_country ?? session?.country ?? 'br',
-        zip,
-        externalId: session?.visitor_id ?? withSession?.visitor_id ?? null,
-        ip: session?.ip_address ?? null,
-        userAgent: session?.user_agent ?? null,
-        fbp: session?.fbp ?? null,
-        fbc: session?.fbc ?? null,
-      }),
+      user_data: buildUserData(purchaseUserInput(first, session, withSession)),
       custom_data: {
         currency: (first.currency || 'BRL').toUpperCase(),
         value: Math.round(value * 100) / 100,
@@ -427,18 +411,83 @@ export class MetaCapiService {
    */
   async getEvent(userId: string, workspaceId: string, id: string) {
     await this.assertOwner(userId, workspaceId);
-    const { data, error } = await this.supabase
-      .getClient()
+    const client = this.supabase.getClient();
+    const { data, error } = await client
       .from('capi_events')
-      .select('id, event_name, event_id, status, attempts, error, fbtrace_id, created_at, sent_at, payload, response')
+      .select('id, event_name, event_id, status, attempts, error, fbtrace_id, created_at, sent_at, payload, response, session_id, sale_id')
       .eq('workspace_id', workspaceId)
       .eq('id', id)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!data) throw new NotFoundException('Envio nao encontrado');
 
-    const { payload, ...rest } = data;
-    return { ...rest, request: { data: [payload] } };
+    const { payload, session_id, sale_id, ...rest } = data;
+
+    // Os originais são remontados do banco, não guardados no envio: a venda
+    // e a visita já têm os dados, e assim nada além do hash vai junto no
+    // payload. explainUserData confere cada um contra o hash que saiu.
+    const session = session_id
+      ? (
+          await client
+            .from('tracking_sessions')
+            .select(
+              'session_id, visitor_id, started_at, ended_at, landing_page, referrer, utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid, fbp, fbc, ip_address, user_agent, device_type, country, region, city, pageviews, had_checkout_click, sale_id',
+            )
+            .eq('workspace_id', workspaceId)
+            .eq('session_id', session_id)
+            .maybeSingle()
+        ).data
+      : null;
+
+    const sentUserData = (payload as MetaEvent | null)?.user_data ?? null;
+    const base = { ...rest, request: { data: [payload] } };
+
+    if (data.event_name !== 'Purchase') {
+      const input: UserDataInput = {
+        externalId: session?.visitor_id ?? null,
+        ip: session?.ip_address ?? null,
+        userAgent: session?.user_agent ?? null,
+        fbp: session?.fbp ?? null,
+        fbc: session?.fbc ?? null,
+        state: session?.region ?? null,
+        country: session?.country ?? null,
+      };
+      return { ...base, original: explainUserData(input, sentUserData), webhook: null, database: null };
+    }
+
+    const sales = await this.purchaseLines(workspaceId, sale_id);
+    const first = sales[0] ?? null;
+    const input = first ? purchaseUserInput(first, session, sales.find((l) => l.session_id) ?? null) : {};
+    return {
+      ...base,
+      original: explainUserData(input, sentUserData),
+      // Corpo do webhook como chegou, guardado na venda (sem tokens). Vendas
+      // gravadas antes de o painel guardá-lo não têm.
+      webhook: first?.metadata?.webhook_body ?? null,
+      database: {
+        sales: sales.map(({ metadata, ...row }) => {
+          const { webhook_body: _body, hottok: _hottok, ...meta } = metadata ?? {};
+          return { ...row, metadata: meta };
+        }),
+        session,
+      },
+    };
+  }
+
+  /** As linhas do pedido do Purchase: a venda do envio e as irmãs de pedido. */
+  private async purchaseLines(workspaceId: string, saleId: string | null): Promise<any[]> {
+    if (!saleId) return [];
+    const client = this.supabase.getClient();
+    const { data: sale } = await client.from('sales').select('*').eq('workspace_id', workspaceId).eq('id', saleId).maybeSingle();
+    if (!sale) return [];
+    if (!sale.order_external_id) return [sale];
+    const { data: lines } = await client
+      .from('sales')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .eq('order_external_id', sale.order_external_id)
+      .order('created_at', { ascending: true });
+    return lines?.length ? lines : [sale];
   }
 
   async assertOwner(userId: string, workspaceId: string): Promise<void> {
@@ -507,4 +556,24 @@ export class MetaCapiService {
       .upsert(rows, { onConflict: 'workspace_id,event_name,event_id', ignoreDuplicates: true });
     if (error) this.logger.warn(`Registro da CAPI: ${error.message}`);
   }
+}
+
+/**
+ * O comprador do Purchase: dados da venda, navegação da visita casada. Uma
+ * função só para o envio e para a tela de detalhe remontarem o mesmo input.
+ */
+function purchaseUserInput(sale: any, session: any, withSession: any): UserDataInput {
+  return {
+    email: sale.customer_email,
+    phone: sale.customer_phone,
+    fullName: sale.customer_name,
+    state: sale.customer_state ?? session?.region,
+    country: sale.customer_country ?? session?.country ?? 'br',
+    zip: sale.metadata?.zipcode ?? sale.metadata?.zip ?? sale.metadata?.cep ?? null,
+    externalId: session?.visitor_id ?? withSession?.visitor_id ?? null,
+    ip: session?.ip_address ?? null,
+    userAgent: session?.user_agent ?? null,
+    fbp: session?.fbp ?? null,
+    fbc: session?.fbc ?? null,
+  };
 }

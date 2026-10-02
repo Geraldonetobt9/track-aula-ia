@@ -38,10 +38,27 @@ export interface CapiEventRow {
   sale_id: string | null;
 }
 
+/** Um campo do user_data: o dado de origem ao lado do que saiu para o Meta. */
+export interface CapiUserDataField {
+  key: string;
+  label: string;
+  original: string | null;
+  normalized: string | null;
+  sent: string | null;
+  hashed: boolean;
+  /** O dado de hoje ainda produz o que foi enviado? */
+  matches: boolean;
+}
+
 /** Um envio aberto: o corpo mandado ao Meta (sem o token) e a resposta dele. */
 export interface CapiEventDetail extends Omit<CapiEventRow, 'sale_id'> {
   request: { data: unknown[] };
   response: unknown;
+  original: CapiUserDataField[];
+  /** Só no Purchase: o corpo do webhook como chegou (sem tokens). */
+  webhook: unknown | null;
+  /** Só no Purchase: as linhas da venda e a visita casada. */
+  database: { sales: Record<string, unknown>[]; session: Record<string, unknown> | null } | null;
 }
 
 export interface CapiEventsResponse {

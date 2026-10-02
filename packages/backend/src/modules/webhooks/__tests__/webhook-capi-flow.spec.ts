@@ -52,8 +52,10 @@ describe('webhook → venda → Purchase', () => {
     const result = await service.processDirect({ platform: 'hotmart', body: JSON.parse(rawBody), authToken: 't', rawBody });
 
     expect(result).toEqual({ status: 200, body: { ok: true } });
-    expect(persisted[0].metadata).toEqual({ x: 1, tracking_ref: REF });
-    expect(persisted[1].metadata).toEqual({ tracking_ref: REF });
+    // O corpo do webhook vai junto, para a aba Webhook do detalhe do Purchase.
+    const webhook_body = JSON.parse(rawBody);
+    expect(persisted[0].metadata).toEqual({ x: 1, tracking_ref: REF, webhook_body });
+    expect(persisted[1].metadata).toEqual({ tracking_ref: REF, webhook_body });
     expect(capi.sendPurchases).toHaveBeenCalledWith(['sale-1']); // só a aprovada
     expect(order).toEqual(['processor', 'capi']);
   });
