@@ -251,6 +251,9 @@ export class MetaCapiService {
     const soldAt = Math.floor(new Date(first.sold_at).getTime() / 1000);
     const now = nowSeconds();
     const value = lines.reduce((sum, l) => sum + Number(l.amount || 0), 0);
+    const itemId = (l: any): string => (l.metadata?.product_id != null ? String(l.metadata.product_id) : l.product_name || 'produto');
+    // O produto principal é a primeira linha do pedido; os bumps vêm em contents.
+    const mainProductId = first.metadata?.product_id != null ? String(first.metadata.product_id) : null;
     const event: MetaEvent = {
       event_name: 'Purchase',
       // Pagamento de boleto/pix pode chegar dias depois; fora da janela do
@@ -265,12 +268,17 @@ export class MetaCapiService {
         value: Math.round(value * 100) / 100,
         order_id: String(orderId),
         content_type: 'product',
+        content_ids: lines.map(itemId),
         contents: lines.map((l) => ({
-          id: l.metadata?.product_id ? String(l.metadata.product_id) : l.product_name || 'produto',
+          id: itemId(l),
           quantity: 1,
           item_price: Number(l.amount || 0),
         })),
         content_name: lines.map((l) => l.product_name).filter(Boolean).join(' + ') || undefined,
+        // Parâmetros próprios, além dos padrão do Meta: o produto principal.
+        // Sem o id na venda (plataforma que não o manda), vai só o nome.
+        ...(mainProductId ? { product_id: mainProductId } : {}),
+        ...(first.product_name ? { product_name: first.product_name } : {}),
       },
     };
 

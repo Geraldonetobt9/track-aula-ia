@@ -217,6 +217,7 @@ describe('MetaCapiService', () => {
       expect(event.event_id).toBe('purchase:HP1');
       expect(event.event_source_url).toBe('https://www.loja.com.br/oferta');
       expect(event.custom_data).toMatchObject({ currency: 'BRL', value: 124, order_id: 'HP1', content_name: 'Curso + Bump' });
+      expect(event.custom_data).toMatchObject({ product_id: '555', product_name: 'Curso', content_ids: ['555', 'Bump'] });
       expect(event.custom_data.contents).toHaveLength(2);
       expect(event.user_data).toMatchObject({
         em: [sha256('maria@gmail.com')],
