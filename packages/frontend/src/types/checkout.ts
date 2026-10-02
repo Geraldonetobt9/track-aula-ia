@@ -362,7 +362,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: "Transação paga" (TRANSACTION_PAID) e, se houver, reembolso e chargeback',
       '6. Salve na Wiven',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
   frendz: {
@@ -382,7 +382,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: as transações (evento "transaction") — o painel grava só as pagas',
       '6. Salve na Frendz',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
   herospark: {
@@ -402,7 +402,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: somente compra aprovada',
       '6. Salve na Herospark',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
   kavoo: {
@@ -422,7 +422,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: somente venda aprovada',
       '6. Salve na Kavoo',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
   pagtrust: {
@@ -442,7 +442,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: "Compra aprovada" (PURCHASE_APPROVED), reembolso e chargeback',
       '6. Salve na PagTrust',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
   assiny: {
@@ -462,7 +462,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: "Compra aprovada" (approved_purchase) e reembolso',
       '6. Salve na Assiny',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
   yampi: {
@@ -482,7 +482,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: "Pedido pago" (order.paid) e, se houver, pedido reembolsado',
       '6. Salve na Yampi',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
   wiapy: {
@@ -502,7 +502,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: somente pagamento aprovado',
       '6. Salve na Wiapy',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
   doppus: {
@@ -522,7 +522,7 @@ export const CHECKOUT_PLATFORMS: Record<CheckoutPlatform, CheckoutPlatformConfig
       '4. Cole a URL completa no campo de URL',
       '5. Eventos: somente venda aprovada',
       '6. Salve na Doppus',
-      '💡 Para ligar a venda à visita, instale o código de Rastreio de visitantes, logo abaixo das integrações de checkout',
+      '💡 Para ligar a venda à visita, cole o código da página (passo 3 de Checkout e rastreio) na sua página de vendas',
     ],
   },
 };

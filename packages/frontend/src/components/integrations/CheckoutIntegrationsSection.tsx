@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Settings, Clock, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Plus, Clock, MoreHorizontal, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CheckoutPlatform, CHECKOUT_PLATFORMS, CheckoutIntegration } from '@/types/checkout';
@@ -112,145 +110,95 @@ export function CheckoutIntegrationsSection() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Checkout e rastreio</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-10 w-10 rounded-lg" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-32" />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-9 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const addButton = (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => canAddIntegration && setShowPlatformSelector(true)}
+      disabled={!canAddIntegration}
+      title={integrationLimitTooltip}
+    >
+      <Plus className="mr-1.5 h-4 w-4" />
+      {integrations.length === 0 ? 'Conectar checkout' : 'Adicionar outro checkout'}
+    </Button>
+  );
+
+  // Passo 1 do card de Checkout e rastreio: a lista dos webhooks criados.
+  const webhooks = loading ? (
+    <div className="space-y-2">
+      {[1, 2].map((i) => (
+        <Skeleton key={i} className="h-14 w-full rounded-lg" />
+      ))}
+    </div>
+  ) : (
+    <div className="space-y-2">
+      {integrations.map((integration) => {
+        const config = CHECKOUT_PLATFORMS[integration.platform];
+        const logo = PLATFORM_LOGOS[integration.platform];
+        const isConnected = integration.is_active;
+
+        return (
+          <div
+            key={integration.id}
+            className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5"
+          >
+            {logo ? (
+              <img src={logo.src} alt={logo.alt} className="h-8 w-8 shrink-0 rounded-md object-cover" />
+            ) : (
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${config.color} text-xs font-bold text-foreground`}>
+                {config.name.substring(0, 2)}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{integration.name}</p>
+              <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                <span>{config.name}</span>
+                {integration.last_webhook_at && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {format(new Date(integration.last_webhook_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                )}
+              </p>
+            </div>
+            <span className="hidden items-center gap-1.5 text-xs sm:inline-flex">
+              <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-muted-foreground/50'}`} aria-hidden />
+              <span className={isConnected ? 'text-foreground' : 'text-muted-foreground'}>
+                {isConnected ? 'Conectado' : 'Desativado'}
+              </span>
+            </span>
+            <Button variant="ghost" size="sm" className="px-3" onClick={() => handleEdit(integration)}>
+              Editar
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Mais opções">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => setIntegrationToDelete(integration)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Remover
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      })}
+      {addButton}
+    </div>
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Checkout e rastreio</h2>
-          <p className="text-sm text-muted-foreground">
-            O webhook que recebe as vendas e o código que liga cada venda à visita
-          </p>
-        </div>
-        <Button
-          onClick={() => canAddIntegration && setShowPlatformSelector(true)}
-          disabled={!canAddIntegration}
-          title={integrationLimitTooltip}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Adicionar integração
-        </Button>
-      </div>
-
-      {integrations.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Settings className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground mb-4">Nenhuma integração configurada</p>
-            <Button
-              onClick={() => canAddIntegration && setShowPlatformSelector(true)}
-              disabled={!canAddIntegration}
-              title={integrationLimitTooltip}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar primeira integração
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {integrations.map((integration) => {
-            const config = CHECKOUT_PLATFORMS[integration.platform];
-            const logo = PLATFORM_LOGOS[integration.platform];
-            const isConnected = integration.is_active;
-
-            return (
-              <Card key={integration.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {logo ? (
-                        <img src={logo.src} alt={logo.alt} className="h-10 w-10 rounded-lg object-cover" />
-                      ) : (
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${config.color} text-sm font-bold text-foreground`}>
-                          {config.name.substring(0, 2)}
-                        </div>
-                      )}
-                      <div>
-                        <CardTitle className="text-base">{integration.name}</CardTitle>
-                        <p className="text-xs text-muted-foreground">{config.name}</p>
-                      </div>
-                    </div>
-                    <Badge
-                      variant={isConnected ? 'default' : 'secondary'}
-                      className={isConnected ? 'bg-primary text-primary-foreground' : ''}
-                    >
-                      {isConnected ? 'Conectado' : 'Desativado'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {integration.last_webhook_at && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>
-                        Último webhook:{' '}
-                        {format(new Date(integration.last_webhook_at), "dd/MM 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleEdit(integration)}
-                    >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Editar
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setIntegrationToDelete(integration)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Remover
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Snippet da página de vendas: fecha o elo entre o anúncio e o checkout. */}
-      <TrackingSnippetCard checkoutPlatforms={integrations.map((i) => i.platform)} />
+    <>
+      <TrackingSnippetCard
+        checkoutPlatforms={integrations.map((i) => i.platform)}
+        webhooks={webhooks}
+      />
 
       <AlertDialog open={!!integrationToDelete} onOpenChange={(open) => !open && setIntegrationToDelete(null)}>
         <AlertDialogContent>
@@ -296,6 +244,6 @@ export function CheckoutIntegrationsSection() {
           saving={saving}
         />
       )}
-    </div>
+    </>
   );
 }

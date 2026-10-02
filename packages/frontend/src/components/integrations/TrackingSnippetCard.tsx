@@ -47,11 +47,19 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 }
 
 /**
- * `checkoutPlatforms`: as plataformas com webhook criado logo acima, em
- * CheckoutIntegrationsSection. O indexador segue o checkout de lá — com uma
+ * Checkout e rastreio numa sequência só: 1) webhook do checkout, 2) domínio
+ * first-party, 3) código da página. O passo 1 vem pronto de
+ * CheckoutIntegrationsSection (`webhooks`), com as plataformas integradas em
+ * `checkoutPlatforms`. O indexador segue o checkout de lá — com uma
  * plataforma só, ela é gravada sozinha; com várias, escolhe-se entre elas.
  */
-export function TrackingSnippetCard({ checkoutPlatforms }: { checkoutPlatforms: string[] }) {
+export function TrackingSnippetCard({
+  checkoutPlatforms,
+  webhooks,
+}: {
+  checkoutPlatforms: string[];
+  webhooks: React.ReactNode;
+}) {
   const { activeWorkspaceId } = useWorkspaceContext();
   const { status, loading } = useTrackingStatus();
   const { settings, save, saving } = useCapiSettings();
@@ -154,14 +162,14 @@ export function TrackingSnippetCard({ checkoutPlatforms }: { checkoutPlatforms: 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Code2 className="h-4 w-4 text-accent-readable" strokeWidth={1.5} />
-            <CardTitle>Rastreio de visitantes</CardTitle>
+            <CardTitle>Checkout e rastreio</CardTitle>
           </div>
           {!loading && (
             <span className="inline-flex items-center gap-1.5 text-xs">
               {active ? (
                 <>
                   <CircleCheck className="h-3.5 w-3.5 text-green-500" aria-hidden />
-                  <span className="text-foreground">Snippet ativo</span>
+                  <span className="text-foreground">Rastreio ativo</span>
                 </>
               ) : (
                 <>
@@ -173,24 +181,22 @@ export function TrackingSnippetCard({ checkoutPlatforms }: { checkoutPlatforms: 
           )}
         </div>
         <CardDescription>
-          Gera um indexador para cada visita e o leva até o checkout. A plataforma devolve o indexador no webhook,
-          e é ele que junta os dados de navegação (fbp, fbc, IP, navegador, cidade) com a compra.
+          O webhook traz as vendas do checkout; o código na página de vendas registra cada visita e leva um indexador
+          até o checkout. A plataforma devolve o indexador no webhook, e é ele que junta a visita (fbp, fbc, IP,
+          navegador, cidade) com a compra.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <Step n={1} title="Checkout">
-          {choices.length === 0 ? (
-            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px text-amber-500" aria-hidden />
-              Adicione a integração do seu checkout acima. O rastreio usa a mesma plataforma.
-            </p>
-          ) : choices.length === 1 ? (
-            <p className="text-sm text-foreground">{choices[0].name}</p>
-          ) : (
+        <Step n={1} title="Webhook do checkout">
+          <p className="text-xs text-muted-foreground">
+            Conecte a plataforma onde você vende. É por esse webhook que as vendas chegam ao painel.
+          </p>
+          {webhooks}
+          {choices.length > 1 && (
             <Select value={currentPlatform ?? undefined} onValueChange={escolherPlataforma} disabled={saving}>
               <SelectTrigger className="w-full sm:w-72" aria-label="Checkout da página de vendas">
-                <SelectValue placeholder="Qual checkout esta página usa?" />
+                <SelectValue placeholder="Qual desses checkouts a página de vendas usa?" />
               </SelectTrigger>
               <SelectContent>
                 {choices.map((p) => (
