@@ -119,7 +119,6 @@ export class WebhookQueueService {
     // depois da resposta. sendPurchases nunca lança.
     const ctx: WebhookContext = {
       trackingRef: extractTrackingRef(data.rawBody ?? JSON.stringify(data.body ?? {})),
-      body: data.body,
       approvedSaleIds: [],
     };
     return webhookContext.run(ctx, async () => {

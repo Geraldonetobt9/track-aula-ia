@@ -431,7 +431,7 @@ export class MetaCapiService {
           await client
             .from('tracking_sessions')
             .select(
-              'session_id, visitor_id, started_at, ended_at, landing_page, referrer, utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid, fbp, fbc, ip_address, user_agent, device_type, country, region, city, pageviews, had_checkout_click, sale_id',
+              'visitor_id, fbp, fbc, ip_address, user_agent, region, country',
             )
             .eq('workspace_id', workspaceId)
             .eq('session_id', session_id)
@@ -452,42 +452,31 @@ export class MetaCapiService {
         state: session?.region ?? null,
         country: session?.country ?? null,
       };
-      return { ...base, original: explainUserData(input, sentUserData), webhook: null, database: null };
+      return { ...base, original: explainUserData(input, sentUserData) };
     }
 
-    const sales = await this.purchaseLines(workspaceId, sale_id);
-    const first = sales[0] ?? null;
-    const input = first ? purchaseUserInput(first, session, sales.find((l) => l.session_id) ?? null) : {};
-    return {
-      ...base,
-      original: explainUserData(input, sentUserData),
-      // Corpo do webhook como chegou, guardado na venda (sem tokens). Vendas
-      // gravadas antes de o painel guardá-lo não têm.
-      webhook: first?.metadata?.webhook_body ?? null,
-      database: {
-        sales: sales.map(({ metadata, ...row }) => {
-          const { webhook_body: _body, hottok: _hottok, ...meta } = metadata ?? {};
-          return { ...row, metadata: meta };
-        }),
-        session,
-      },
-    };
-  }
+    const sale = sale_id
+      ? (
+          await client
+            .from('sales')
+            .select('customer_name, customer_email, customer_phone, customer_state, customer_country, session_id, visitor_id, metadata')
+            .eq('workspace_id', workspaceId)
+            .eq('id', sale_id)
+            .maybeSingle()
+        ).data
+      : null;
+    const input = sale ? purchaseUserInput(sale, session, sale.session_id ? sale : null) : {};
 
-  /** As linhas do pedido do Purchase: a venda do envio e as irmãs de pedido. */
-  private async purchaseLines(workspaceId: string, saleId: string | null): Promise<any[]> {
-    if (!saleId) return [];
-    const client = this.supabase.getClient();
-    const { data: sale } = await client.from('sales').select('*').eq('workspace_id', workspaceId).eq('id', saleId).maybeSingle();
-    if (!sale) return [];
-    if (!sale.order_external_id) return [sale];
-    const { data: lines } = await client
-      .from('sales')
-      .select('*')
-      .eq('workspace_id', workspaceId)
-      .eq('order_external_id', sale.order_external_id)
-      .order('created_at', { ascending: true });
-    return lines?.length ? lines : [sale];
+    // No Purchase, o comprador vem do webhook (gravado na venda) e a
+    // navegação vem da visita no banco. Estado e país só vêm da visita
+    // quando o webhook não os trouxe.
+    const fromDb = new Set<string>();
+    if (session) {
+      ['client_ip_address', 'client_user_agent', 'fbp', 'fbc', 'external_id'].forEach((k) => fromDb.add(k));
+      if (!sale?.customer_state && session.region) fromDb.add('st');
+      if (!sale?.customer_country && session.country) fromDb.add('country');
+    }
+    return { ...base, original: explainUserData(input, sentUserData, fromDb) };
   }
 
   async assertOwner(userId: string, workspaceId: string): Promise<void> {

@@ -4,7 +4,7 @@ import { toExclusiveEndDate, toStartOfDayUTC } from '../../shared/helpers/date-r
 import { PlanLimitsService, SaleDecision } from '../plan-limits/plan-limits.service';
 import { StripeOverageService } from '../stripe/stripe-overage.service';
 import { VisitorMatchingService } from '../tracking/visitor-matching.service';
-import { redactSecrets, webhookContext } from '../../shared/helpers/webhook-context';
+import { webhookContext } from '../../shared/helpers/webhook-context';
 
 export interface SalesFilters {
   from?: string;
@@ -48,11 +48,6 @@ export class SalesService {
     const ctx = webhookContext.getStore();
     if (ctx?.trackingRef && !sale.metadata?.tracking_ref) {
       sale = { ...sale, metadata: { ...(sale.metadata ?? {}), tracking_ref: ctx.trackingRef } };
-    }
-
-    // O corpo do webhook, sem tokens: a aba Webhook do detalhe do Purchase.
-    if (ctx?.body != null && !sale.metadata?.webhook_body) {
-      sale = { ...sale, metadata: { ...(sale.metadata ?? {}), webhook_body: redactSecrets(ctx.body) } };
     }
 
     // 1. Status != approved — persist without limit check.

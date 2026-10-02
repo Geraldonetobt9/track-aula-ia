@@ -46,6 +46,8 @@ export interface CapiUserDataField {
   normalized: string | null;
   sent: string | null;
   hashed: boolean;
+  /** Veio da visita gravada no banco (no Purchase: IP, navegador, fbp, fbc...). */
+  fromDatabase: boolean;
   /** O dado de hoje ainda produz o que foi enviado? */
   matches: boolean;
 }
@@ -55,10 +57,6 @@ export interface CapiEventDetail extends Omit<CapiEventRow, 'sale_id'> {
   request: { data: unknown[] };
   response: unknown;
   original: CapiUserDataField[];
-  /** Só no Purchase: o corpo do webhook como chegou (sem tokens). */
-  webhook: unknown | null;
-  /** Só no Purchase: as linhas da venda e a visita casada. */
-  database: { sales: Record<string, unknown>[]; session: Record<string, unknown> | null } | null;
 }
 
 export interface CapiEventsResponse {

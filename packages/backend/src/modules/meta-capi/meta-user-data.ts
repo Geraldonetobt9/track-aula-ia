@@ -136,6 +136,8 @@ export interface UserDataExplanation {
   /** O que saiu para o Meta. */
   sent: string | null;
   hashed: boolean;
+  /** Veio da visita gravada no banco (e não do webhook ou do navegador). */
+  fromDatabase: boolean;
   /**
    * O hash do dado de hoje bate com o que saiu? false quando a origem mudou
    * desde o envio (ou o IP expirou na retenção) — o original mostrado não é
@@ -155,7 +157,11 @@ const PLAIN_FIELDS: { key: string; label: string; pick: (i: UserDataInput) => st
  * Lado a lado, para o painel: cada campo do user_data enviado com o dado de
  * origem remontado do banco. Só lê — os originais nunca vão ao Meta.
  */
-export function explainUserData(input: UserDataInput, sentUserData: Record<string, unknown> | null | undefined): UserDataExplanation[] {
+export function explainUserData(
+  input: UserDataInput,
+  sentUserData: Record<string, unknown> | null | undefined,
+  databaseKeys: ReadonlySet<string> = new Set(),
+): UserDataExplanation[] {
   const sent = sentUserData ?? {};
   const first = (v: unknown): string | null => (Array.isArray(v) ? (v[0] ?? null) : typeof v === 'string' ? v : null);
   const out: UserDataExplanation[] = [];
@@ -170,6 +176,7 @@ export function explainUserData(input: UserDataInput, sentUserData: Record<strin
       normalized: f.normalized,
       sent: sentValue,
       hashed: true,
+      fromDatabase: databaseKeys.has(f.key),
       matches: !!sentValue && !!f.normalized && sha256(f.normalized) === sentValue,
     });
   }
@@ -184,6 +191,7 @@ export function explainUserData(input: UserDataInput, sentUserData: Record<strin
       normalized: null,
       sent: sentValue,
       hashed: false,
+      fromDatabase: databaseKeys.has(f.key),
       matches: !!sentValue && sentValue === original,
     });
   }
