@@ -117,6 +117,7 @@ export class TrackingCollectController {
       buildTrackerScript(workspaceId, this.collectUrl(req), {
         param: config?.param ?? 'sck',
         pixelId: config?.pixelId ?? null,
+        xcodUtm: config?.platform === 'hotmart',
       }),
     );
   }

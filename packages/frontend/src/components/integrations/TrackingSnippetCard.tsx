@@ -14,6 +14,7 @@ import { absoluteApiUrl } from '@/lib/apiUrl';
 import { useTrackingStatus } from '@/hooks/useTracking';
 import { useCapiSettings } from '@/hooks/useCapi';
 import { findTrackingPlatform, TRACKING_PLATFORMS } from '@/lib/trackingPlatforms';
+import { UtmPatternStep } from './UtmPatternStep';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -48,7 +49,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 
 /**
  * Checkout e rastreio numa sequência só: 1) escolha do checkout, 2) domínio
- * first-party, 3) código da página, 4) webhook. O passo 4 vem de
+ * first-party, 3) código da página, 4) webhook, 5) padrão de UTM. O passo 4 vem de
  * CheckoutIntegrationsSection (`webhooks`), que recebe o checkout escolhido
  * no passo 1 para criar o webhook dele direto.
  */
@@ -301,6 +302,10 @@ export function TrackingSnippetCard({
             É por ele que as vendas chegam ao painel — e com elas o indexador que liga cada venda à visita.
           </p>
           {webhooks(platform?.id ?? null)}
+        </Step>
+
+        <Step n={5} title="Padrão de UTM nos anúncios">
+          <UtmPatternStep platform={platform} />
         </Step>
 
         <div className="grid grid-cols-2 gap-3 rounded-lg border border-foreground/5 bg-foreground/[0.02] px-3 py-3 text-xs">

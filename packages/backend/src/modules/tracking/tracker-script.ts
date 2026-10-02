@@ -34,6 +34,10 @@
  *     dispara PageView e InitiateCheckout no navegador com o mesmo event_id
  *     da CAPI: o Meta deduplica pelo event_id. Sem PIXEL não há CAPI, e o
  *     snippet não toca em fbq nenhum.
+ *   - Hotmart (XCOD_UTM): as UTMs da chegada vão também no xcod, no formato
+ *     source|conjunto|id|campanha|id|anúncio|id|posicionamento — a Hotmart não
+ *     devolve utm_* no webhook, só o xcod, e é dele que o processador tira o
+ *     anúncio (parseXcod). O indexador continua no sck.
  *   - page_exit ao sair, com o tempo na página.
  *   - sentinel('track', 'nome', {props}) para eventos manuais.
  *   - Do Not Track ligado: não faz nada.
@@ -41,7 +45,7 @@
 
 const SOURCE = `(function (w, d) {
   'use strict';
-  var TID = __TID__, ENDPOINT = __ENDPOINT__, PARAM = __PARAM__, PIXEL = __PIXEL__;
+  var TID = __TID__, ENDPOINT = __ENDPOINT__, PARAM = __PARAM__, PIXEL = __PIXEL__, XCOD_UTM = __XCOD_UTM__;
   var n = w.navigator || {};
   var pending = (w.sentinel && w.sentinel.q) || [];
   if (n.doNotTrack == '1' || n.doNotTrack == 'yes' || w.doNotTrack == '1' || n.msDoNotTrack == '1') {
@@ -140,6 +144,17 @@ const SOURCE = `(function (w, d) {
   setCookie('_stl_vid', vid, YEAR);
   var utm = readParams();
   var arrival = readQuery();
+
+  // Nome e ID sempre em dois pedaços, para o parseXcod achar cada um no lugar.
+  function pair(v) {
+    v = v || '';
+    return v.indexOf('|') >= 0 ? v : v + '|';
+  }
+
+  function utmXcod() {
+    if (!XCOD_UTM || !(utm.utm_source || utm.utm_campaign || utm.utm_medium || utm.utm_content)) return null;
+    return [utm.utm_source || '', pair(utm.utm_medium), pair(utm.utm_campaign), pair(utm.utm_content), utm.utm_term || ''].join('|');
+  }
 
   var now0 = new Date().getTime();
   var fbp = getCookie('_fbp');
@@ -285,11 +300,12 @@ const SOURCE = `(function (w, d) {
   }
 
   function decorateUrl(href) {
-    var add = [], pairs = arrival ? arrival.split('&') : [], i, k;
+    var add = [], pairs = arrival ? arrival.split('&') : [], i, k, xc = utmXcod();
     href = setParam(href, 'stl_' + sid, true);
+    if (xc && !hasKey(href, 'xcod')) add.push('xcod=' + encodeURIComponent(xc));
     for (i = 0; i < pairs.length; i++) {
       k = pairs[i].split('=')[0];
-      if (k !== PARAM && !hasKey(href, k)) add.push(pairs[i]);
+      if (k !== PARAM && !hasKey(href, k) && !(xc && k === 'xcod')) add.push(pairs[i]);
     }
     if (!add.length) return href;
     var hash = '', h = href.indexOf('#');
@@ -376,6 +392,14 @@ const SOURCE = `(function (w, d) {
       f.appendChild(input);
     }
     if (!input.value || input.value.indexOf('stl_') === 0 || PARAM === 'utm_term') input.value = 'stl_' + sid;
+    var xc = utmXcod();
+    if (xc && !(f.querySelector && f.querySelector('input[name="xcod"]'))) {
+      input = d.createElement('input');
+      input.type = 'hidden';
+      input.name = 'xcod';
+      input.value = xc;
+      f.appendChild(input);
+    }
     checkout(action.href);
   }
 
@@ -463,6 +487,8 @@ export interface TrackerOptions {
   param: string;
   /** O snippet carrega e inicia este pixel, e dispara nele com o event_id da CAPI. */
   pixelId?: string | null;
+  /** Hotmart: manda as UTMs da chegada no xcod, que é o que ela devolve no webhook. */
+  xcodUtm?: boolean;
 }
 
 const SAFE_PIXEL = /^\d{5,20}$/;
@@ -485,7 +511,8 @@ export function buildTrackerScript(
   return COMPACT.replace('__TID__', () => JSON.stringify(workspaceId))
     .replace('__ENDPOINT__', () => JSON.stringify(endpoint))
     .replace('__PARAM__', () => JSON.stringify(param))
-    .replace('__PIXEL__', () => JSON.stringify(pixel));
+    .replace('__PIXEL__', () => JSON.stringify(pixel))
+    .replace('__XCOD_UTM__', () => JSON.stringify(!!options.xcodUtm));
 }
 
 /** Resposta para área desconhecida: define sentinel() e não faz nada. */

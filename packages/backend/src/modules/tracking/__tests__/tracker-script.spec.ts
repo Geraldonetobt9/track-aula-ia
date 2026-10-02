@@ -27,6 +27,7 @@ interface LoadOptions {
   cookies?: string[];
   fbq?: jest.Mock;
   pixel?: string;
+  xcodUtm?: boolean;
 }
 
 /**
@@ -68,7 +69,7 @@ function loadPage(url: string, html = '', opts: LoadOptions = {}): Page {
   for (const args of opts.queued ?? []) w.sentinel(...args);
 
   w.eval(
-    buildTrackerScript(TID, ENDPOINT, { param: opts.param ?? 'sck', pixelId: opts.pixel }),
+    buildTrackerScript(TID, ENDPOINT, { param: opts.param ?? 'sck', pixelId: opts.pixel, xcodUtm: opts.xcodUtm }),
   );
 
   return {
@@ -289,6 +290,41 @@ describe('tracker.js', () => {
       await ready(page);
       const href = (page.dom.window.document.getElementById('buy') as HTMLAnchorElement).href;
       expect(new URL(href).searchParams.get('sck')).toBe(`stl_${sidOf(page)}`);
+    });
+
+    it('Hotmart: as UTMs da chegada vao no xcod, no formato que o parseXcod le', async () => {
+      const page = loadPage(
+        'https://www.loja.com.br/oferta?utm_source=FB&utm_campaign=Camp|111111&utm_medium=Conj|222222&utm_content=Ad|333333&utm_term=feed',
+        '<a id="buy" href="https://pay.hotmart.com/X123">C</a>',
+        { xcodUtm: true },
+      );
+      await ready(page);
+      const buy = new URL((page.dom.window.document.getElementById('buy') as HTMLAnchorElement).href);
+      expect(buy.searchParams.get('sck')).toBe(`stl_${sidOf(page)}`);
+      expect(buy.searchParams.get('xcod')).toBe('FB|Conj|222222|Camp|111111|Ad|333333|feed');
+      expect(buy.searchParams.getAll('xcod')).toHaveLength(1);
+    });
+
+    it('Hotmart: sem UTM na chegada, nao inventa xcod', async () => {
+      const page = loadPage('https://www.loja.com.br/oferta', '<a id="buy" href="https://pay.hotmart.com/X123">C</a>', {
+        xcodUtm: true,
+      });
+      await ready(page);
+      const buy = new URL((page.dom.window.document.getElementById('buy') as HTMLAnchorElement).href);
+      expect(buy.searchParams.get('xcod')).toBeNull();
+    });
+
+    it('Hotmart: o formulario de checkout leva o xcod com as UTMs', async () => {
+      const page = loadPage(
+        'https://www.loja.com.br/oferta?utm_source=FB&utm_campaign=Camp|111111&utm_medium=Conj|222222&utm_content=Ad|333333',
+        '<form id="f" action="https://pay.hotmart.com/X123" method="get"><button id="b">Comprar</button></form>',
+        { xcodUtm: true },
+      );
+      await ready(page);
+      const form = page.dom.window.document.getElementById('f') as HTMLFormElement;
+      form.dispatchEvent(new page.w.Event('submit', { bubbles: true, cancelable: true }));
+      const input = form.querySelector('input[name="xcod"]') as HTMLInputElement;
+      expect(input.value).toBe('FB|Conj|222222|Camp|111111|Ad|333333|');
     });
 
     it('vai no formulario de checkout como campo escondido', async () => {

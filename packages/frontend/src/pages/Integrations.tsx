@@ -1,7 +1,6 @@
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { FacebookConnectionForm } from '@/components/integrations/FacebookConnectionForm';
 import { CheckoutIntegrationsSection } from '@/components/integrations/CheckoutIntegrationsSection';
-import { UtmPatternCard } from '@/components/integrations/UtmPatternCard';
 import { MetaCapiCard } from '@/components/integrations/MetaCapiCard';
 import { Separator } from '@/components/ui/separator';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
@@ -50,12 +49,7 @@ export default function Integrations() {
 
             <Separator />
 
-            {/* Padrao de UTM: pertence ao Facebook — e o que se cola no anuncio. */}
-            <UtmPatternCard />
-
-            <Separator />
-
-            {/* Checkout: webhooks e, logo abaixo, o rastreio de visitantes */}
+            {/* Checkout e rastreio: checkout, domínio, código, webhook e padrão de UTM */}
             <CheckoutIntegrationsSection />
 
             <Separator />
