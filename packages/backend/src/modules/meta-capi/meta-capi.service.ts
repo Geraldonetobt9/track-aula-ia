@@ -467,14 +467,13 @@ export class MetaCapiService {
       : null;
     const input = sale ? purchaseUserInput(sale, session, sale.session_id ? sale : null) : {};
 
-    // No Purchase, o comprador vem do webhook (gravado na venda) e a
-    // navegação vem da visita no banco. Estado e país só vêm da visita
-    // quando o webhook não os trouxe.
+    // No Purchase, o comprador vem do webhook (gravado na venda); navegação,
+    // estado e país vêm da visita no banco (purchaseUserInput).
     const fromDb = new Set<string>();
     if (session) {
       ['client_ip_address', 'client_user_agent', 'fbp', 'fbc', 'external_id'].forEach((k) => fromDb.add(k));
-      if (!sale?.customer_state && session.region) fromDb.add('st');
-      if (!sale?.customer_country && session.country) fromDb.add('country');
+      if (session.region) fromDb.add('st');
+      if (session.country) fromDb.add('country');
     }
     return { ...base, original: explainUserData(input, sentUserData, fromDb) };
   }
@@ -550,14 +549,18 @@ export class MetaCapiService {
 /**
  * O comprador do Purchase: dados da venda, navegação da visita casada. Uma
  * função só para o envio e para a tela de detalhe remontarem o mesmo input.
+ *
+ * Estado e país vêm primeiro da visita (geolocalização do IP, no banco): o
+ * endereço que o checkout manda no webhook nem sempre está certo. O do
+ * webhook só vale quando não há visita casada ou ela não tem o dado.
  */
 function purchaseUserInput(sale: any, session: any, withSession: any): UserDataInput {
   return {
     email: sale.customer_email,
     phone: sale.customer_phone,
     fullName: sale.customer_name,
-    state: sale.customer_state ?? session?.region,
-    country: sale.customer_country ?? session?.country ?? 'br',
+    state: session?.region ?? sale.customer_state,
+    country: session?.country ?? sale.customer_country ?? 'br',
     zip: sale.metadata?.zipcode ?? sale.metadata?.zip ?? sale.metadata?.cep ?? null,
     externalId: session?.visitor_id ?? withSession?.visitor_id ?? null,
     ip: session?.ip_address ?? null,

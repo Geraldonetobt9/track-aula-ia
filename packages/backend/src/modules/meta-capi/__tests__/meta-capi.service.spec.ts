@@ -247,6 +247,28 @@ describe('MetaCapiService', () => {
       expect(event.event_source_url).toBeUndefined();
     });
 
+    it('estado e pais vem da visita (geolocalizacao), nao do endereco do webhook', async () => {
+      const { service } = makeService({
+        'sales.select': { data: [line({ customer_state: 'RJ', customer_country: 'PT' })], error: null },
+        'tracking_sessions.select': { data: SESSION, error: null },
+        'capi_events.insert': { data: { id: 'row-1' }, error: null },
+      });
+      await service.sendPurchases(['sale-1']);
+      const [event] = sentBody().data;
+      expect(event.user_data.st).toEqual([sha256('sp')]);
+      expect(event.user_data.country).toEqual([sha256('br')]);
+    });
+
+    it('sem visita casada, estado e pais vem do webhook', async () => {
+      const { service } = makeService({
+        'sales.select': { data: [line({ session_id: null, visitor_id: null, customer_state: 'RJ' })], error: null },
+        'capi_events.insert': { data: { id: 'row-1' }, error: null },
+      });
+      await service.sendPurchases(['sale-1']);
+      const [event] = sentBody().data;
+      expect(event.user_data.st).toEqual([sha256('rj')]);
+    });
+
     it('webhook reenviado: a reserva bate na unicidade e nada sai de novo', async () => {
       const { service } = makeService({
         'sales.select': { data: [line({})], error: null },
