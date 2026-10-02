@@ -36,6 +36,8 @@ export interface CapiEventRow {
   created_at: string;
   sent_at: string | null;
   sale_id: string | null;
+  /** O pixel que recebeu o envio. */
+  pixel_id: string | null;
 }
 
 /** Um campo do user_data: o dado de origem ao lado do que saiu para o Meta. */
@@ -53,7 +55,7 @@ export interface CapiUserDataField {
 }
 
 /** Um envio aberto: o corpo mandado ao Meta (sem o token) e a resposta dele. */
-export interface CapiEventDetail extends Omit<CapiEventRow, 'sale_id'> {
+export interface CapiEventDetail extends Omit<CapiEventRow, 'sale_id' | 'pixel_id'> {
   request: { data: unknown[] };
   response: unknown;
   original: CapiUserDataField[];
@@ -61,8 +63,6 @@ export interface CapiEventDetail extends Omit<CapiEventRow, 'sale_id'> {
 
 export interface CapiEventsResponse {
   summary: Record<string, { sent: number; failed: number }>;
-  /** O pixel configurado na área, que faz os envios. */
-  pixel_id: string | null;
   events: CapiEventRow[];
 }
 

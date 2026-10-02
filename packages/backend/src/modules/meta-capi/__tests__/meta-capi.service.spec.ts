@@ -124,6 +124,21 @@ describe('MetaCapiService', () => {
       const record = calls.find((c) => c.table === 'capi_events' && c.op === 'upsert')!;
       expect(record.args[0].map((r: any) => r.status)).toEqual(['sent', 'sent']);
       expect(record.args[0][0].fbtrace_id).toBe('TRACE1');
+      expect(record.args[0][0].pixel_id).toBe('123456789012345'); // o pixel que recebeu
+    });
+
+    it('sem a coluna pixel_id (migration ainda nao rodada), grava sem ela', async () => {
+      let n = 0;
+      const { service, calls } = makeService({
+        'capi_events.upsert': () =>
+          ++n === 1 ? { data: null, error: { message: "Could not find the 'pixel_id' column of 'capi_events'" } } : { data: null, error: null },
+      });
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ events_received: 1, fbtrace_id: 'T' }) });
+      await service.sendWebEvents(WS, [{ type: 'pageview', eventId: 'e', url: null, visitorId: VID, sessionId: SID, ip: null, userAgent: null, fbp: null, fbc: null, city: null, region: null, country: null }]);
+      const upserts = calls.filter((c) => c.table === 'capi_events' && c.op === 'upsert');
+      expect(upserts).toHaveLength(2);
+      expect(upserts[0].args[0][0].pixel_id).toBe('123456789012345');
+      expect(upserts[1].args[0][0]).not.toHaveProperty('pixel_id');
     });
 
     it('sem pixel ou token configurado, nao manda nada', async () => {

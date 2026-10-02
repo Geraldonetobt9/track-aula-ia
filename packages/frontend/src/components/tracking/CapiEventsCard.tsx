@@ -103,7 +103,7 @@ export function CapiEventsCard() {
                       {formatDistanceToNow(new Date(e.created_at), { addSuffix: true, locale: ptBR })}
                     </TableCell>
                     <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground" title={e.error ?? undefined}>
-                      {data.pixel_id ?? '—'}
+                      {e.pixel_id ?? '—'}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setOpenEventId(e.id)}>

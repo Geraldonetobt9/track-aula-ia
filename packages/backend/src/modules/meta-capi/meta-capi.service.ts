@@ -73,6 +73,29 @@ function nowSeconds() {
 export class MetaCapiService {
   private readonly logger = new Logger(MetaCapiService.name);
 
+  /**
+   * capi_events.pixel_id vem de uma migration aplicada à mão no SQL Editor,
+   * que pode chegar depois do deploy. Enquanto a coluna não existir, grava e
+   * lê sem ela — o registro dos envios não pode quebrar por isso.
+   */
+  private pixelColumn = true;
+
+  private missingPixelColumn(error: { message?: string } | null | undefined): boolean {
+    if (!error || !/pixel_id/.test(error.message ?? '')) return false;
+    this.pixelColumn = false;
+    this.logger.warn('capi_events.pixel_id nao existe: rode a migration 20261002130000_capi_events_pixel.sql');
+    return true;
+  }
+
+  private withPixel<T extends Record<string, unknown>>(row: T, pixelId: string | null): T {
+    return this.pixelColumn ? { ...row, pixel_id: pixelId } : row;
+  }
+
+  private withoutPixel<T extends Record<string, unknown>>(row: T): T {
+    const { pixel_id: _pixel, ...rest } = row as Record<string, unknown>;
+    return rest as T;
+  }
+
   constructor(
     private readonly supabase: SupabaseService,
     private readonly cache: CacheService,
@@ -182,6 +205,7 @@ export class MetaCapiService {
           fbtrace_id: result.fbtraceId,
           error: result.error,
           sent_at: result.ok ? new Date().toISOString() : null,
+          pixel_id: config.pixelId,
         })),
       );
     } catch (err: any) {
@@ -283,20 +307,22 @@ export class MetaCapiService {
     };
 
     // Reserva: a unicidade (área, nome, event_id) barra o reenvio do webhook.
-    const { data: reserved, error: reserveError } = await client
-      .from('capi_events')
-      .insert({
-        workspace_id: first.workspace_id,
-        event_name: 'Purchase',
-        event_id: event.event_id,
-        session_id: session?.session_id ?? null,
-        sale_id: first.id,
-        status: 'pending',
-        attempts: 0,
-        payload: event,
-      })
-      .select('id')
-      .maybeSingle();
+    const reservation = {
+      workspace_id: first.workspace_id,
+      event_name: 'Purchase',
+      event_id: event.event_id,
+      session_id: session?.session_id ?? null,
+      sale_id: first.id,
+      status: 'pending',
+      attempts: 0,
+      payload: event,
+    };
+    const reserve = (row: Record<string, unknown>) =>
+      client.from('capi_events').insert(row).select('id').maybeSingle();
+    let { data: reserved, error: reserveError } = await reserve(this.withPixel(reservation, config.pixelId));
+    if (this.missingPixelColumn(reserveError)) {
+      ({ data: reserved, error: reserveError } = await reserve(reservation));
+    }
 
     if (reserveError) {
       if (!/duplicate|unique/i.test(reserveError.message)) {
@@ -381,9 +407,8 @@ export class MetaCapiService {
   /**
    * Últimos envios da área e contadores de hoje, para o card Últimos eventos.
    *
-   * pixel_id: o pixel configurado na área, que é quem faz os envios. Não é
-   * gravado por envio — se o pixel for trocado, os envios ainda guardados
-   * (10 dias) aparecem com o novo.
+   * pixel_id de cada envio: o gravado na hora do envio. Envios de antes da
+   * coluna existir não têm, e mostram o pixel configurado hoje na área.
    */
   async listEvents(userId: string, workspaceId: string, limit = 50) {
     await this.assertOwner(userId, workspaceId);
@@ -391,13 +416,17 @@ export class MetaCapiService {
     const client = this.supabase.getClient();
     const since = new Date(Date.now() - 24 * 3600_000).toISOString();
 
-    const [recent, last24h] = await Promise.all([
+    const columns = 'id, event_name, event_id, status, attempts, error, fbtrace_id, created_at, sent_at, sale_id';
+    const listRecent = (withPixel: boolean) =>
       client
         .from('capi_events')
-        .select('id, event_name, event_id, status, attempts, error, fbtrace_id, created_at, sent_at, sale_id')
+        .select(withPixel ? `${columns}, pixel_id` : columns)
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false })
-        .limit(Math.min(Math.max(limit, 1), 200)),
+        .limit(Math.min(Math.max(limit, 1), 200));
+
+    const [firstTry, last24h] = await Promise.all([
+      listRecent(this.pixelColumn),
       client
         .from('capi_events')
         .select('event_name, status')
@@ -405,6 +434,7 @@ export class MetaCapiService {
         .gte('created_at', since)
         .limit(10_000),
     ]);
+    const recent = this.missingPixelColumn(firstTry.error) ? await listRecent(false) : firstTry;
     if (recent.error) throw new Error(recent.error.message);
     if (last24h.error) throw new Error(last24h.error.message);
 
@@ -414,7 +444,8 @@ export class MetaCapiService {
       if (r.status === 'sent') s.sent += 1;
       else if (r.status === 'failed') s.failed += 1;
     }
-    return { summary, pixel_id: config?.pixelId ?? null, events: recent.data ?? [] };
+    const events = ((recent.data ?? []) as any[]).map((e) => ({ ...e, pixel_id: e.pixel_id ?? config?.pixelId ?? null }));
+    return { summary, events };
   }
 
   /**
@@ -553,10 +584,13 @@ export class MetaCapiService {
 
   private async record(rows: Record<string, unknown>[]): Promise<void> {
     // Um reenvio do mesmo lote pelo navegador bateria na unicidade; ignora.
-    const { error } = await this.supabase
-      .getClient()
-      .from('capi_events')
-      .upsert(rows, { onConflict: 'workspace_id,event_name,event_id', ignoreDuplicates: true });
+    const upsert = (batch: Record<string, unknown>[]) =>
+      this.supabase
+        .getClient()
+        .from('capi_events')
+        .upsert(batch, { onConflict: 'workspace_id,event_name,event_id', ignoreDuplicates: true });
+    let { error } = await upsert(this.pixelColumn ? rows : rows.map((r) => this.withoutPixel(r)));
+    if (this.missingPixelColumn(error)) ({ error } = await upsert(rows.map((r) => this.withoutPixel(r))));
     if (error) this.logger.warn(`Registro da CAPI: ${error.message}`);
   }
 }
