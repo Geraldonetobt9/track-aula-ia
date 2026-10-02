@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +46,12 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   );
 }
 
-export function TrackingSnippetCard() {
+/**
+ * `checkoutPlatforms`: as plataformas com webhook criado logo acima, em
+ * CheckoutIntegrationsSection. O indexador segue o checkout de lá — com uma
+ * plataforma só, ela é gravada sozinha; com várias, escolhe-se entre elas.
+ */
+export function TrackingSnippetCard({ checkoutPlatforms }: { checkoutPlatforms: string[] }) {
   const { activeWorkspaceId } = useWorkspaceContext();
   const { status, loading } = useTrackingStatus();
   const { settings, save, saving } = useCapiSettings();
@@ -58,6 +63,20 @@ export function TrackingSnippetCard() {
   useEffect(() => {
     setDomain(settings?.tracking_domain ?? '');
   }, [settings?.tracking_domain]);
+
+  const choices = TRACKING_PLATFORMS.filter((p) => checkoutPlatforms.includes(p.id));
+  const onlyChoice = choices.length === 1 ? choices[0] : null;
+  const currentPlatform = settings?.tracking_platform ?? null;
+
+  // Um checkout só: o rastreio acompanha sem a pessoa escolher de novo. Uma
+  // tentativa por plataforma — se o save falhar, não fica repetindo.
+  const autoSaved = useRef<string | null>(null);
+  useEffect(() => {
+    if (!settings || !onlyChoice || currentPlatform === onlyChoice.id) return;
+    if (autoSaved.current === onlyChoice.id) return;
+    autoSaved.current = onlyChoice.id;
+    save({ tracking_platform: onlyChoice.id, tracking_param: onlyChoice.param }).catch(() => {});
+  }, [settings, onlyChoice, currentPlatform, save]);
 
   // A página de Eventos manda para /integrations#rastreio; o React Router
   // não rola até âncora sozinho.
@@ -160,20 +179,29 @@ export function TrackingSnippetCard() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <Step n={1} title="Plataforma de checkout">
-          <Select value={settings?.tracking_platform ?? undefined} onValueChange={escolherPlataforma} disabled={saving}>
-            <SelectTrigger className="w-full sm:w-72" aria-label="Plataforma de checkout">
-              <SelectValue placeholder="Escolha a plataforma" />
-            </SelectTrigger>
-            <SelectContent>
-              {TRACKING_PLATFORMS.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {platform && (
+        <Step n={1} title="Checkout">
+          {choices.length === 0 ? (
+            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px text-amber-500" aria-hidden />
+              Adicione a integração do seu checkout acima. O rastreio usa a mesma plataforma.
+            </p>
+          ) : choices.length === 1 ? (
+            <p className="text-sm text-foreground">{choices[0].name}</p>
+          ) : (
+            <Select value={currentPlatform ?? undefined} onValueChange={escolherPlataforma} disabled={saving}>
+              <SelectTrigger className="w-full sm:w-72" aria-label="Checkout da página de vendas">
+                <SelectValue placeholder="Qual checkout esta página usa?" />
+              </SelectTrigger>
+              <SelectContent>
+                {choices.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {platform && choices.length > 0 && (
             <p className="text-xs text-muted-foreground">
               O indexador vai no parâmetro <code className="font-mono text-foreground">{platform.param}</code> da URL.
               {platform.param === 'utm_term' && (

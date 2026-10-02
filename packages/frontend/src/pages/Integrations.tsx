@@ -2,7 +2,6 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { FacebookConnectionForm } from '@/components/integrations/FacebookConnectionForm';
 import { CheckoutIntegrationsSection } from '@/components/integrations/CheckoutIntegrationsSection';
 import { UtmPatternCard } from '@/components/integrations/UtmPatternCard';
-import { TrackingSnippetCard } from '@/components/integrations/TrackingSnippetCard';
 import { MetaCapiCard } from '@/components/integrations/MetaCapiCard';
 import { Separator } from '@/components/ui/separator';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
@@ -56,13 +55,10 @@ export default function Integrations() {
 
             <Separator />
 
-            {/* Checkout Integrations */}
+            {/* Checkout: webhooks e, logo abaixo, o rastreio de visitantes */}
             <CheckoutIntegrationsSection />
 
             <Separator />
-
-            {/* Snippet da página de vendas: fecha o elo entre o anúncio e o checkout. */}
-            <TrackingSnippetCard />
 
             <MetaCapiCard />
 

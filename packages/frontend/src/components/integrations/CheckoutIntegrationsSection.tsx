@@ -26,6 +26,7 @@ import { useCheckoutIntegrations } from '@/hooks/useCheckoutIntegrations';
 import { usePlanUsage } from '@/hooks/usePlanUsage';
 import { CheckoutConfigModal } from './CheckoutConfigModal';
 import { PlatformSelectorModal } from './PlatformSelectorModal';
+import { TrackingSnippetCard } from './TrackingSnippetCard';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PLATFORM_LOGOS: Partial<Record<CheckoutPlatform, { src: string; alt: string }>> = {
@@ -114,7 +115,7 @@ export function CheckoutIntegrationsSection() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Integrações de Checkout</h2>
+        <h2 className="text-lg font-semibold">Checkout e rastreio</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
@@ -141,9 +142,9 @@ export function CheckoutIntegrationsSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Integrações de Checkout</h2>
+          <h2 className="text-lg font-semibold">Checkout e rastreio</h2>
           <p className="text-sm text-muted-foreground">
-            Configure webhooks para receber vendas automaticamente
+            O webhook que recebe as vendas e o código que liga cada venda à visita
           </p>
         </div>
         <Button
@@ -247,6 +248,9 @@ export function CheckoutIntegrationsSection() {
           })}
         </div>
       )}
+
+      {/* Snippet da página de vendas: fecha o elo entre o anúncio e o checkout. */}
+      <TrackingSnippetCard checkoutPlatforms={integrations.map((i) => i.platform)} />
 
       <AlertDialog open={!!integrationToDelete} onOpenChange={(open) => !open && setIntegrationToDelete(null)}>
         <AlertDialogContent>
