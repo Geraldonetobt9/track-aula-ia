@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { formatDuration, formatPercent, type TrackingBreakdownRow } from '@/hooks/useTracking';
+import { formatPercent, type TrackingBreakdownRow } from '@/hooks/useTracking';
 
 /** Página sem o protocolo: "loja.com/oferta" cabe na coluna, "https://www." não acrescenta nada. */
 function shortUrl(url: string) {
@@ -42,8 +42,6 @@ export function TrackingBreakdownTable({
           <TableRow>
             <TableHead>{keyLabel}</TableHead>
             <TableHead className="text-right">Visitantes</TableHead>
-            <TableHead className="text-right">Tempo médio</TableHead>
-            <TableHead className="text-right">Rejeição</TableHead>
             <TableHead className="text-right">Checkout</TableHead>
             <TableHead className="text-right">Vendas</TableHead>
             <TableHead className="text-right">Conversão</TableHead>
@@ -56,8 +54,6 @@ export function TrackingBreakdownTable({
                 {isUrl && r.key.startsWith('http') ? shortUrl(r.key) : r.key}
               </TableCell>
               <TableCell className="text-right tabular-nums">{r.visitors.toLocaleString('pt-BR')}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatDuration(r.averageDuration)}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatPercent(r.bounceRate)}</TableCell>
               <TableCell className="text-right tabular-nums">{formatPercent(r.checkoutRate)}</TableCell>
               <TableCell className="text-right tabular-nums">{r.sales.toLocaleString('pt-BR')}</TableCell>
               <TableCell className="text-right tabular-nums">{formatPercent(r.conversionRate)}</TableCell>

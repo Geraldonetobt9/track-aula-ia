@@ -1,8 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowDownRight, ArrowUpRight, LogOut, MousePointerClick, Percent, Users } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, MousePointerClick, Percent, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDuration, formatPercent, type TrackingStats } from '@/hooks/useTracking';
+import { formatPercent, type TrackingStats } from '@/hooks/useTracking';
 
 interface TileProps {
   title: string;
@@ -56,7 +56,7 @@ function Change({ value, label }: { value: number | null; label: string }) {
   );
 }
 
-/** Os quatro números do funil, na página de Eventos. */
+/** Os três números do funil, na página de Eventos. */
 export function TrackingSummaryCards({
   stats,
   loading,
@@ -68,7 +68,7 @@ export function TrackingSummaryCards({
 }) {
   const s = stats;
   return (
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
       <Tile
         title="Visitantes Únicos"
         value={(s?.totalVisitors ?? 0).toLocaleString('pt-BR')}
@@ -99,14 +99,6 @@ export function TrackingSummaryCards({
         loading={loading}
         blurValue={blurValues}
         subtitle="das visitas clicaram em comprar"
-      />
-      <Tile
-        title="Rejeição"
-        value={formatPercent(s?.bounceRate ?? 0)}
-        icon={<LogOut className="h-4 w-4" />}
-        loading={loading}
-        blurValue={blurValues}
-        subtitle={s && `tempo médio ${formatDuration(s.averageSessionDuration)}`}
       />
     </div>
   );
