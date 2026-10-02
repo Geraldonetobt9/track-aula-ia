@@ -60,7 +60,6 @@ const Integrations = lazyWithReload(() => import("./pages/Integrations"));
 const Settings = lazyWithReload(() => import("./pages/Settings"));
 const Financial = lazyWithReload(() => import("./pages/Financial"));
 const Rules = lazyWithReload(() => import("./pages/Rules"));
-const Events = lazyWithReload(() => import("./pages/Events"));
 const Tracking = lazyWithReload(() => import("./pages/Tracking"));
 const Terms = lazyWithReload(() => import("./pages/Terms"));
 const Privacy = lazyWithReload(() => import("./pages/Privacy"));
@@ -131,7 +130,6 @@ const App = () => (
                         <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                         <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
                         <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
-                        <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
                         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
                         {/* Admin Routes */}

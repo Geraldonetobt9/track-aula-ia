@@ -19,7 +19,7 @@ export const API_URL =
  * Mesma base, porem sempre absoluta.
  *
  * Use esta quando a URL for SAIR do app — webhook que o cliente cola no painel
- * da plataforma de checkout, endereco de ingestao do GTM. Uma URL relativa
+ * da plataforma de checkout. Uma URL relativa
  * funciona no fetch do proprio site e e inutil em qualquer lugar fora dele:
  * a Hubla nao tem como resolver "/api/webhooks/hubla".
  */

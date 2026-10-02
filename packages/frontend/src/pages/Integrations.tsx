@@ -4,17 +4,12 @@ import { CheckoutIntegrationsSection } from '@/components/integrations/CheckoutI
 import { MetaCapiCard } from '@/components/integrations/MetaCapiCard';
 import { Separator } from '@/components/ui/separator';
 import { useWorkspaceContext } from '@/contexts/WorkspaceContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { isOperatorEmail } from '@/lib/featureAccess';
-import { GtmIngestCard } from '@/components/integrations/GtmIngestCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Layers } from 'lucide-react';
 
 export default function Integrations() {
   const { activeWorkspaceId, workspaces } = useWorkspaceContext();
-  const { user } = useAuth();
   const hasWorkspace = workspaces.length > 0 && !!activeWorkspaceId;
-  const showGtm = isOperatorEmail(user?.email);
 
   return (
     <DashboardLayout>
@@ -56,12 +51,6 @@ export default function Integrations() {
 
             <MetaCapiCard />
 
-            {showGtm && (
-              <>
-                <Separator />
-                <GtmIngestCard />
-              </>
-            )}
           </>
         )}
       </div>

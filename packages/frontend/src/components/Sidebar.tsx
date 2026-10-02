@@ -15,12 +15,10 @@ import {
   ChevronRight,
   LogOut,
   Zap,
-  Activity,
   Users,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { isOperatorEmail } from '@/lib/featureAccess';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -87,25 +85,6 @@ export function Sidebar({ onNavClick, onCollapsedChange }: { onNavClick?: () => 
               {!collapsed && <span>{item.label}</span>}
             </NavLink>
           ))}
-
-          {/* GTM events — operator-only diagnostics, not a product feature */}
-          {isOperatorEmail(user?.email) && (
-            <NavLink
-              to="/events"
-              onClick={onNavClick}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200',
-                  isActive
-                    ? 'bg-foreground/8 text-foreground font-medium'
-                    : 'text-muted-foreground/80 hover:text-foreground hover:bg-foreground/5'
-                )
-              }
-            >
-              <Activity className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
-              {!collapsed && <span>Eventos</span>}
-            </NavLink>
-          )}
 
           {/* Admin Link */}
           {user?.role === 'admin' && (

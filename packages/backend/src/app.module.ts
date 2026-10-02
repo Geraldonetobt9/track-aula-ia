@@ -21,7 +21,6 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { StripeModule } from './modules/stripe/stripe.module';
 import { UsersModule } from './modules/users/users.module';
 import { AccountModule } from './modules/account/account.module';
-import { GtmEventsModule } from './modules/gtm-events/gtm-events.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { MetaCapiModule } from './modules/meta-capi/meta-capi.module';
 
@@ -53,7 +52,6 @@ const RATE_LIMIT_MAX_REQUESTS = 60;
     StripeModule,
     UsersModule,
     AccountModule,
-    GtmEventsModule,
     TrackingModule,
     MetaCapiModule,
   ],
