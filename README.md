@@ -156,6 +156,7 @@ Não rode o `schema_completo.sql` — ele é para banco vazio. No SQL Editor, ro
 1. `supabase/migrations/20260928000000_rastreio_de_visitantes.sql`
 2. `supabase/migrations/20260929000000_meta_capi.sql`
 3. `supabase/migrations/20260929100000_plataformas_dos_containers.sql`
+4. `supabase/migrations/20261002000000_capi_events_10_dias.sql`
 
 Depois, `git push` para a Vercel publicar o código novo.
 

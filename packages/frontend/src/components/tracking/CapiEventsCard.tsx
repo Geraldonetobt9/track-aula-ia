@@ -42,7 +42,7 @@ export function CapiEventsCard() {
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between space-y-0">
         <div className="space-y-1.5">
           <CardTitle>Últimos eventos</CardTitle>
-          <CardDescription>O que foi enviado à API de Conversões do Meta.</CardDescription>
+          <CardDescription>O que foi enviado à API de Conversões do Meta. Cada envio fica guardado por 10 dias.</CardDescription>
         </div>
         <Button variant="outline" size="sm" onClick={reenviar} disabled={retrying || failed === 0}>
           <RefreshCw className={retrying ? 'mr-1.5 h-3.5 w-3.5 animate-spin' : 'mr-1.5 h-3.5 w-3.5'} />
