@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CircleAlert, CircleCheck, Copy } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -80,12 +80,7 @@ function UserDataTable({ rows }: { rows: CapiUserDataField[] }) {
     <div className="divide-y divide-border rounded-lg border border-border">
       {rows.map((r) => (
         <div key={r.key} className="grid gap-1 px-3 py-2.5 text-xs sm:grid-cols-[170px_1fr]">
-          <div className="flex items-start gap-1.5">
-            {r.matches ? (
-              <CircleCheck className="mt-px h-3.5 w-3.5 shrink-0 text-green-500" aria-label="Confere com o enviado" />
-            ) : (
-              <CircleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-amber-500" aria-label="Não confere com o enviado" />
-            )}
+          <div>
             <div>
               <p className="flex flex-wrap items-center gap-1.5 font-medium text-foreground">
                 {r.label}
@@ -102,13 +97,6 @@ function UserDataTable({ rows }: { rows: CapiUserDataField[] }) {
             <Field label="Original" value={r.original} />
             {r.hashed && <Field label="Normalizado" value={r.normalized} />}
             <Field label={r.hashed ? 'Hash enviado' : 'Enviado'} value={r.sent} mono />
-            {!r.matches && (
-              <p className="text-amber-600 dark:text-amber-400">
-                {r.sent
-                  ? 'O dado de hoje não gera mais o que foi enviado: a origem mudou depois do envio.'
-                  : 'Não foi enviado.'}
-              </p>
-            )}
           </dl>
         </div>
       ))}
