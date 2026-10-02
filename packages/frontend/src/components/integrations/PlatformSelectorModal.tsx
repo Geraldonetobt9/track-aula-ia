@@ -51,7 +51,7 @@ export function PlatformSelectorModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[620px]">
         <DialogHeader>
           <DialogTitle>Adicionar integração</DialogTitle>
           <DialogDescription>
@@ -59,7 +59,7 @@ export function PlatformSelectorModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-3 py-4">
+        <div className="grid grid-cols-3 gap-2 py-2 sm:grid-cols-4">
           {ALL_PLATFORMS.map((platform) => {
             const config = CHECKOUT_PLATFORMS[platform];
             const logo = PLATFORM_LOGOS[platform];
@@ -68,7 +68,7 @@ export function PlatformSelectorModal({
               <button
                 key={platform}
                 onClick={() => handleSelect(platform)}
-                className="flex flex-col items-center gap-2 rounded-lg border border-foreground/5 p-4 hover:bg-foreground/[0.03] transition-colors cursor-pointer"
+                className="flex flex-col items-center gap-2 rounded-lg border border-foreground/5 px-2 py-3 hover:bg-foreground/[0.03] transition-colors cursor-pointer"
               >
                 {logo ? (
                   <img src={logo.src} alt={logo.alt} className="h-10 w-10 rounded-lg object-cover" />
@@ -77,7 +77,7 @@ export function PlatformSelectorModal({
                     {config.name.substring(0, 2)}
                   </div>
                 )}
-                <span className="text-xs font-medium">{config.name}</span>
+                <span className="text-center text-xs font-medium leading-tight">{config.name}</span>
               </button>
             );
           })}
