@@ -59,7 +59,7 @@ export function TrackingSnippetCard() {
     setDomain(settings?.tracking_domain ?? '');
   }, [settings?.tracking_domain]);
 
-  // A página de Visitantes manda para /integrations#rastreio; o React Router
+  // A página de Eventos manda para /integrations#rastreio; o React Router
   // não rola até âncora sozinho.
   useEffect(() => {
     if (activeWorkspaceId && window.location.hash === '#rastreio') {

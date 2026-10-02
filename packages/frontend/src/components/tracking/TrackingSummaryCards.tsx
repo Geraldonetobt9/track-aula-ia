@@ -56,7 +56,7 @@ function Change({ value, label }: { value: number | null; label: string }) {
   );
 }
 
-/** Os quatro números do funil: Dashboard e página de Visitantes. */
+/** Os quatro números do funil, na página de Eventos. */
 export function TrackingSummaryCards({
   stats,
   loading,

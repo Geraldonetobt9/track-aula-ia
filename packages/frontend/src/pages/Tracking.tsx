@@ -18,6 +18,7 @@ import { TrackingSummaryCards } from '@/components/tracking/TrackingSummaryCards
 import { TrackingFunnel } from '@/components/tracking/TrackingFunnel';
 import { TrackingDailyCharts } from '@/components/tracking/TrackingDailyCharts';
 import { TrackingBreakdownTable } from '@/components/tracking/TrackingBreakdownTable';
+import { CapiEventsCard } from '@/components/tracking/CapiEventsCard';
 
 export default function Tracking() {
   const [dateRange, setDateRange] = useState<DateRange>(() => getDefaultDateRange());
@@ -37,7 +38,7 @@ export default function Tracking() {
       <div className="space-y-6 animate-sentinel-in">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Visitantes</h1>
+            <h1 className="text-xl font-semibold text-foreground">Eventos</h1>
             <p className="text-sm text-muted-foreground/80 mt-1">
               Quem chegou na página de vendas, quem clicou em comprar e quem comprou
             </p>
@@ -137,6 +138,8 @@ export default function Tracking() {
             </Card>
           </>
         )}
+
+        <CapiEventsCard />
       </div>
     </DashboardLayout>
   );
