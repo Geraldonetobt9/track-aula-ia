@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,18 +47,15 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 }
 
 /**
- * Checkout e rastreio numa sequência só: 1) webhook do checkout, 2) domínio
- * first-party, 3) código da página. O passo 1 vem pronto de
- * CheckoutIntegrationsSection (`webhooks`), com as plataformas integradas em
- * `checkoutPlatforms`. O indexador segue o checkout de lá — com uma
- * plataforma só, ela é gravada sozinha; com várias, escolhe-se entre elas.
+ * Checkout e rastreio numa sequência só: 1) escolha do checkout, 2) domínio
+ * first-party, 3) código da página, 4) webhook. O passo 4 vem de
+ * CheckoutIntegrationsSection (`webhooks`), que recebe o checkout escolhido
+ * no passo 1 para criar o webhook dele direto.
  */
 export function TrackingSnippetCard({
-  checkoutPlatforms,
   webhooks,
 }: {
-  checkoutPlatforms: string[];
-  webhooks: React.ReactNode;
+  webhooks: (platformId: string | null) => React.ReactNode;
 }) {
   const { activeWorkspaceId } = useWorkspaceContext();
   const { status, loading } = useTrackingStatus();
@@ -72,19 +69,7 @@ export function TrackingSnippetCard({
     setDomain(settings?.tracking_domain ?? '');
   }, [settings?.tracking_domain]);
 
-  const choices = TRACKING_PLATFORMS.filter((p) => checkoutPlatforms.includes(p.id));
-  const onlyChoice = choices.length === 1 ? choices[0] : null;
   const currentPlatform = settings?.tracking_platform ?? null;
-
-  // Um checkout só: o rastreio acompanha sem a pessoa escolher de novo. Uma
-  // tentativa por plataforma — se o save falhar, não fica repetindo.
-  const autoSaved = useRef<string | null>(null);
-  useEffect(() => {
-    if (!settings || !onlyChoice || currentPlatform === onlyChoice.id) return;
-    if (autoSaved.current === onlyChoice.id) return;
-    autoSaved.current = onlyChoice.id;
-    save({ tracking_platform: onlyChoice.id, tracking_param: onlyChoice.param }).catch(() => {});
-  }, [settings, onlyChoice, currentPlatform, save]);
 
   // A página de Eventos manda para /integrations#rastreio; o React Router
   // não rola até âncora sozinho.
@@ -188,26 +173,21 @@ export function TrackingSnippetCard({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <Step n={1} title="Webhook do checkout">
-          <p className="text-xs text-muted-foreground">
-            Conecte a plataforma onde você vende. É por esse webhook que as vendas chegam ao painel.
-          </p>
-          {webhooks}
-          {choices.length > 1 && (
-            <Select value={currentPlatform ?? undefined} onValueChange={escolherPlataforma} disabled={saving}>
-              <SelectTrigger className="w-full sm:w-72" aria-label="Checkout da página de vendas">
-                <SelectValue placeholder="Qual desses checkouts a página de vendas usa?" />
-              </SelectTrigger>
-              <SelectContent>
-                {choices.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {platform && choices.length > 0 && (
+
+        <Step n={1} title="Escolha seu checkout">
+          <Select value={currentPlatform ?? undefined} onValueChange={escolherPlataforma} disabled={saving}>
+            <SelectTrigger className="w-full sm:w-72" aria-label="Plataforma de checkout">
+              <SelectValue placeholder="Escolha a plataforma" />
+            </SelectTrigger>
+            <SelectContent>
+              {TRACKING_PLATFORMS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {platform && (
             <p className="text-xs text-muted-foreground">
               O indexador vai no parâmetro <code className="font-mono text-foreground">{platform.param}</code> da URL.
               {platform.param === 'utm_term' && (
@@ -314,6 +294,13 @@ export function TrackingSnippetCard({
               O código já usa {savedDomain}. Só publique depois de o subdomínio responder em "Verificar".
             </p>
           )}
+        </Step>
+
+        <Step n={4} title="Criar o webhook">
+          <p className="text-xs text-muted-foreground">
+            É por ele que as vendas chegam ao painel — e com elas o indexador que liga cada venda à visita.
+          </p>
+          {webhooks(platform?.id ?? null)}
         </Step>
 
         <div className="grid grid-cols-2 gap-3 rounded-lg border border-foreground/5 bg-foreground/[0.02] px-3 py-3 text-xs">

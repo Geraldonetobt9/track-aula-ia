@@ -110,21 +110,39 @@ export function CheckoutIntegrationsSection() {
     }
   };
 
-  const addButton = (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => canAddIntegration && setShowPlatformSelector(true)}
-      disabled={!canAddIntegration}
-      title={integrationLimitTooltip}
-    >
-      <Plus className="mr-1.5 h-4 w-4" />
-      {integrations.length === 0 ? 'Conectar checkout' : 'Adicionar outro checkout'}
-    </Button>
-  );
+  // Passo 4 do card de Checkout e rastreio: o webhook do checkout escolhido
+  // no passo 1 abre direto; os já criados ficam listados.
+  const renderAddButton = (platformId: string | null) => {
+    const chosen = platformId && platformId in CHECKOUT_PLATFORMS ? (platformId as CheckoutPlatform) : null;
+    if (!chosen) {
+      return <p className="text-xs text-muted-foreground/70">Escolha o checkout no passo 1.</p>;
+    }
+    const exists = integrations.some((i) => i.platform === chosen);
+    return exists ? (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => canAddIntegration && setShowPlatformSelector(true)}
+        disabled={!canAddIntegration}
+        title={integrationLimitTooltip}
+      >
+        <Plus className="mr-1.5 h-4 w-4" />
+        Criar outro webhook
+      </Button>
+    ) : (
+      <Button
+        size="sm"
+        onClick={() => canAddIntegration && handlePlatformSelected(chosen)}
+        disabled={!canAddIntegration}
+        title={integrationLimitTooltip}
+      >
+        <Plus className="mr-1.5 h-4 w-4" />
+        Criar webhook da {CHECKOUT_PLATFORMS[chosen].name}
+      </Button>
+    );
+  };
 
-  // Passo 1 do card de Checkout e rastreio: a lista dos webhooks criados.
-  const webhooks = loading ? (
+  const webhooks = (platformId: string | null) => loading ? (
     <div className="space-y-2">
       {[1, 2].map((i) => (
         <Skeleton key={i} className="h-14 w-full rounded-lg" />
@@ -189,16 +207,13 @@ export function CheckoutIntegrationsSection() {
           </div>
         );
       })}
-      {addButton}
+      {renderAddButton(platformId)}
     </div>
   );
 
   return (
     <>
-      <TrackingSnippetCard
-        checkoutPlatforms={integrations.map((i) => i.platform)}
-        webhooks={webhooks}
-      />
+      <TrackingSnippetCard webhooks={webhooks} />
 
       <AlertDialog open={!!integrationToDelete} onOpenChange={(open) => !open && setIntegrationToDelete(null)}>
         <AlertDialogContent>
