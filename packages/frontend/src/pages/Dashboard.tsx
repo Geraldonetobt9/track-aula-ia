@@ -28,8 +28,6 @@ import { useChartColors } from '@/hooks/useChartColors';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { SalesGlobe } from '@/components/dashboard/SalesGlobe';
-import { TrackingSummaryCards } from '@/components/tracking/TrackingSummaryCards';
-import { useTrackingStats } from '@/hooks/useTracking';
 import { SyncButton } from '@/components/SyncButton';
 import { DateRangeFilter, DateRange, getDefaultDateRange, getPresetFromRange } from '@/components/DateRangeFilter';
 import { AdAccountFilter } from '@/components/AdAccountFilter';
@@ -330,13 +328,6 @@ export default function Dashboard() {
 
   const hasData = metrics.salesCount > 0;
 
-  // Os filtros de conta e produto não se aplicam a visitas: a visita não
-  // sabe de que produto ou conta de anúncio veio antes de virar venda.
-  const tracking = useTrackingStats(dateRange);
-  const hasTracking =
-    !!tracking.data &&
-    (tracking.data.stats.totalVisitors > 0 || tracking.data.stats.visitorsChange !== null);
-
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
@@ -468,16 +459,6 @@ export default function Dashboard() {
                 blurValue={isPrivacyHidden}
               />
             </div>
-
-            {/* Funil de visitantes: só aparece com o snippet instalado, para
-                quem não usa o rastreio não ganhar uma fileira de zeros. */}
-            {hasTracking && (
-              <TrackingSummaryCards
-                stats={tracking.data?.stats ?? null}
-                loading={tracking.loading}
-                blurValues={isPrivacyHidden}
-              />
-            )}
 
             {/* Chart + Globe row */}
             <div className="grid gap-3 grid-cols-1 lg:grid-cols-[1fr_1fr_1fr]">
