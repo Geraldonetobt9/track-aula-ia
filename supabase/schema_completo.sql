@@ -7,7 +7,7 @@
 -- Cole no SQL Editor de um projeto Supabase NOVO E VAZIO e execute uma vez.
 -- Se o banco ja tiver algo, rode supabase/reset.sql antes.
 --
--- 95 migrations, geradas em 2026-09-29.
+-- 96 migrations, geradas em 2026-10-02.
 -- ============================================================
 
 -- PULADA: 20260401000002_phase1_backfill_workspace_id.sql
@@ -7703,7 +7703,7 @@ ALTER TABLE public.checkout_integrations
 --
 -- cron.schedule atualiza o job pelo nome: o corpo inteiro vai de novo, com
 -- as outras regras de retenção iguais.
-DO $
+DO $$
 BEGIN
   CREATE EXTENSION IF NOT EXISTS pg_cron;
   PERFORM cron.schedule(
@@ -7720,7 +7720,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RAISE NOTICE 'pg_cron indisponivel, expurgo nao agendado (%).', SQLERRM;
 END;
-$;
+$$;
 
 -- Limpa já o que passou dos 10 dias, sem esperar a madrugada.
 DELETE FROM public.capi_events WHERE created_at < now() - interval '10 days';
