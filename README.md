@@ -140,8 +140,9 @@ Variáveis que você pode acrescentar na Vercel depois (Settings → Environment
 |---|---|
 | `CRON_SECRET` | Reenvio automático, uma vez por dia, dos eventos que o Meta recusou. Sem ela, o reenvio é pelo botão em Integrações. |
 | `ENCRYPTION_KEY` | Chave que cifra os tokens salvos. Sem ela, é derivada da `service_role`. Defina **desde o início** se um dia for trocar a `service_role`: trocar a chave depois obriga a colar os tokens de novo. |
+| `META_API_VERSION` | Versão da Graph API do Meta (Ads e API de Conversões). Padrão: `v25.0`. Só preencha para usar outra. |
 
-Para gerar um valor aleatório para qualquer uma das duas:
+Para gerar um valor aleatório para `CRON_SECRET` ou `ENCRYPTION_KEY`:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
