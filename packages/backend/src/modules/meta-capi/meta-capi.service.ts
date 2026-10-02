@@ -378,9 +378,16 @@ export class MetaCapiService {
     return { retried: due.length, sent };
   }
 
-  /** Últimos envios da área e contadores de hoje, para o card de Integrações. */
+  /**
+   * Últimos envios da área e contadores de hoje, para o card Últimos eventos.
+   *
+   * pixel_id: o pixel configurado na área, que é quem faz os envios. Não é
+   * gravado por envio — se o pixel for trocado, os envios ainda guardados
+   * (10 dias) aparecem com o novo.
+   */
   async listEvents(userId: string, workspaceId: string, limit = 50) {
     await this.assertOwner(userId, workspaceId);
+    const config = await this.getConfig(workspaceId);
     const client = this.supabase.getClient();
     const since = new Date(Date.now() - 24 * 3600_000).toISOString();
 
@@ -407,7 +414,7 @@ export class MetaCapiService {
       if (r.status === 'sent') s.sent += 1;
       else if (r.status === 'failed') s.failed += 1;
     }
-    return { summary, events: recent.data ?? [] };
+    return { summary, pixel_id: config?.pixelId ?? null, events: recent.data ?? [] };
   }
 
   /**

@@ -61,6 +61,8 @@ export interface CapiEventDetail extends Omit<CapiEventRow, 'sale_id'> {
 
 export interface CapiEventsResponse {
   summary: Record<string, { sent: number; failed: number }>;
+  /** O pixel configurado na área, que faz os envios. */
+  pixel_id: string | null;
   events: CapiEventRow[];
 }
 

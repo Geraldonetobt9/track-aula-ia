@@ -76,7 +76,7 @@ export function CapiEventsCard() {
                   <TableHead>Evento</TableHead>
                   <TableHead>Situação</TableHead>
                   <TableHead>Quando</TableHead>
-                  <TableHead>Detalhe</TableHead>
+                  <TableHead>Pixel</TableHead>
                   <TableHead className="w-0"><span className="sr-only">Payload</span></TableHead>
                 </TableRow>
               </TableHeader>
@@ -102,8 +102,8 @@ export function CapiEventsCard() {
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(e.created_at), { addSuffix: true, locale: ptBR })}
                     </TableCell>
-                    <TableCell className="max-w-[280px] truncate text-xs text-muted-foreground" title={e.error ?? e.fbtrace_id ?? ''}>
-                      {e.error ?? (e.event_name === 'Purchase' ? e.event_id.replace(/^purchase:/, 'pedido ') : e.fbtrace_id ?? '')}
+                    <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground" title={e.error ?? undefined}>
+                      {data.pixel_id ?? '—'}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setOpenEventId(e.id)}>
