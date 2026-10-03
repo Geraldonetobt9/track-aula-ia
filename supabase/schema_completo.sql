@@ -7,7 +7,25 @@
 -- Cole no SQL Editor de um projeto Supabase NOVO E VAZIO e execute uma vez.
 -- Se o banco ja tiver algo, rode supabase/reset.sql antes.
 --
--- 96 migrations, geradas em 2026-10-02.
+-- 2 migration(s), gerado em 2026-10-03.
+-- ============================================================
+
+-- ==================== 20261002120000_base.sql ====================
+
+-- ============================================================
+-- BASE — o banco inteiro do painel, até 2026-10-02
+-- ============================================================
+-- Consolida as 97 migrations de 2026-02 a 2026-10-02 num arquivo só, na
+-- ordem e com os ajustes que o banco novo precisa (o que era o
+-- schema_completo.sql nessa data). As migrations originais continuam no
+-- histórico do git.
+--
+-- Mudanças novas no banco: crie uma migration com data depois desta, em
+-- supabase/migrations/, e rode node scripts/gerar-schema.js. Não edite este
+-- arquivo para mudar o banco: quem já tem o painel no ar não o roda de novo.
+--
+-- Os comentários ">>>>>>>>>> arquivo.sql <<<<<<<<<<" marcam de qual
+-- migration original veio cada trecho.
 -- ============================================================
 
 -- PULADA: 20260401000002_phase1_backfill_workspace_id.sql
@@ -7873,4 +7891,26 @@ SELECT tablename, rowsecurity
 FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY tablename;
+
+
+
+-- ==================== 20261002130000_capi_events_pixel.sql ====================
+
+-- ============================================================
+-- Pixel de cada envio à CAPI
+-- ============================================================
+-- A lista "Últimos eventos" mostra o pixel que recebeu cada envio. Antes
+-- ele não era gravado: a lista usava o pixel configurado na área, que
+-- muda para todos os envios quando o pixel é trocado.
+--
+-- Os envios que já estão na tabela (no máximo 10 dias, pela retenção)
+-- recebem o pixel configurado hoje na área: é o melhor palpite disponível.
+ALTER TABLE public.capi_events ADD COLUMN IF NOT EXISTS pixel_id TEXT;
+
+UPDATE public.capi_events e
+SET pixel_id = w.meta_pixel_id
+FROM public.workspaces w
+WHERE e.workspace_id = w.id
+  AND e.pixel_id IS NULL
+  AND w.meta_pixel_id IS NOT NULL;
 

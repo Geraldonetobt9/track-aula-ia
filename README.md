@@ -126,9 +126,13 @@ No **Cloudflare**, deixe a nuvem **cinza** (*DNS only*). Com a nuvem laranja a V
 Tudo pela tela, nesta ordem:
 
 1. **Facebook Ads** — cole o access token do Meta; as contas de anúncio aparecem sozinhas.
-2. **Checkouts** — escolha a plataforma e siga as instruções da própria tela (URL do webhook + token).
-3. **Rastreio de visitantes** — escolha a plataforma de checkout e copie o código para antes do `</body>` da página de vendas.
-4. **API de Conversões do Meta** — ID do pixel e token de acesso. Para testar, preencha o código de teste e veja os eventos em *Eventos de teste* no Gerenciador de Eventos; apague o código depois.
+2. **Checkout e rastreio** — um passo a passo só, no mesmo card:
+   1. **Escolha seu checkout** — a plataforma onde você vende.
+   2. **Domínio first-party** — aberto pelo seu domínio (Etapa 4), já vem pronto.
+   3. **Código da página** — copie para antes do `</body>` da página de vendas.
+   4. **Criar o webhook** — o botão abre o checkout escolhido; cole a URL e o token na plataforma, como a tela mostra.
+   5. **Padrão de UTM** — cole no campo *Parâmetros de URL* de cada anúncio.
+3. **API de Conversões do Meta** — ID do pixel e token de acesso. Para testar, preencha o código de teste e veja os eventos em *Eventos de teste* no Gerenciador de Eventos; apague o código depois.
 
 ---
 
@@ -152,14 +156,21 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ## Já tem o painel no ar e está atualizando?
 
-Não rode o `schema_completo.sql` — ele é para banco vazio. No SQL Editor, rode só as migrations novas, nesta ordem:
+Não rode o `schema_completo.sql` nem a migration base: os dois são para banco vazio.
 
-1. `supabase/migrations/20260928000000_rastreio_de_visitantes.sql`
-2. `supabase/migrations/20260929000000_meta_capi.sql`
-3. `supabase/migrations/20260929100000_plataformas_dos_containers.sql`
-4. `supabase/migrations/20261002000000_capi_events_10_dias.sql`
+Em `supabase/migrations/`, a primeira migration (`20261002120000_base.sql`) é o banco inteiro até 2026-10-02. Toda mudança no banco depois disso vira uma migration nova, com data posterior. Para atualizar, rode no SQL Editor só as que vieram depois da última que você aplicou, em ordem de data.
 
 Depois, `git push` para a Vercel publicar o código novo.
+
+### Mudou o banco? Regere o schema
+
+Crie a migration nova em `supabase/migrations/` (nome `AAAAMMDDHHMMSS_o_que_muda.sql`) e rode:
+
+```bash
+node scripts/gerar-schema.js
+```
+
+Ele refaz o `supabase/schema_completo.sql` a partir das migrations. Não edite o schema à mão.
 
 ---
 

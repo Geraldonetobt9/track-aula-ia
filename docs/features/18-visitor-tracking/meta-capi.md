@@ -62,7 +62,7 @@ Tudo no subdominio do cliente (`track.loja.com.br`) apontado para o projeto na V
 - `workspaces`: `tracking_platform`, `tracking_param` (CHECK), `tracking_domain`, `meta_pixel_id`, `meta_capi_token` (cifrado), `meta_test_event_code`, `meta_mirror_browser`.
 - `tracking_sessions`: `fbp`, `fbc`, `ip_address`.
 - `tracking_events.metadata.event_id`.
-- `capi_events`: um envio por linha — `status` (`pending`/`sent`/`failed`), `attempts`, `payload` (o evento enviado), `response`, `fbtrace_id`, `error`. Retencao: 10 dias, todos os eventos (migration 20261002000000).
+- `capi_events`: um envio por linha — `status` (`pending`/`sent`/`failed`), `attempts`, `payload` (o evento enviado), `response`, `fbtrace_id`, `error`, `pixel_id` (o pixel que recebeu). Retencao: 10 dias, todos os eventos (job tracking-retention).
 
 ## 5. API
 
