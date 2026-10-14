@@ -1,4 +1,5 @@
-import { buildTrackerScript } from '../tracker-script';
+import { buildTrackerScript, TrackerAbTest } from '../tracker-script';
+import { normalizePageUrl } from '../../ab-tests/ab-url';
 
 // O jsdom já está no monorepo (via testes do frontend), mas sem @types:
 // require evita trazer uma dependência só para tipar o teste.
@@ -17,6 +18,8 @@ interface Page {
   w: any;
   openMock: jest.Mock;
   beacons: any[];
+  /** Erros do jsdom ao tentar navegar (ele não navega): um por redirecionamento. */
+  navigations: string[];
   hide: () => void;
 }
 
@@ -28,6 +31,9 @@ interface LoadOptions {
   fbq?: jest.Mock;
   pixel?: string;
   xcodUtm?: boolean;
+  abTests?: TrackerAbTest[];
+  /** Navegador que recusa cookie: o que for gravado some. */
+  blockCookies?: boolean;
 }
 
 /**
@@ -47,6 +53,13 @@ function loadPage(url: string, html = '', opts: LoadOptions = {}): Page {
   const beacons: any[] = [];
 
   for (const c of opts.cookies ?? []) w.document.cookie = `${c}; path=/`;
+  if (opts.blockCookies) {
+    Object.defineProperty(w.document, 'cookie', { get: () => '', set: () => undefined, configurable: true });
+  }
+  const navigations: string[] = [];
+  dom.virtualConsole.on('jsdomError', (e: Error) => {
+    if (/navigation/i.test(e.message)) navigations.push(e.message);
+  });
   Object.defineProperty(w.navigator, 'sendBeacon', {
     value: (endpoint: string, body: string) => {
       expect(endpoint).toBe(ENDPOINT);
@@ -69,7 +82,12 @@ function loadPage(url: string, html = '', opts: LoadOptions = {}): Page {
   for (const args of opts.queued ?? []) w.sentinel(...args);
 
   w.eval(
-    buildTrackerScript(TID, ENDPOINT, { param: opts.param ?? 'sck', pixelId: opts.pixel, xcodUtm: opts.xcodUtm }),
+    buildTrackerScript(TID, ENDPOINT, {
+      param: opts.param ?? 'sck',
+      pixelId: opts.pixel,
+      xcodUtm: opts.xcodUtm,
+      abTests: opts.abTests,
+    }),
   );
 
   return {
@@ -77,6 +95,7 @@ function loadPage(url: string, html = '', opts: LoadOptions = {}): Page {
     w,
     openMock,
     beacons,
+    navigations,
     hide: () => {
       Object.defineProperty(w.document, 'visibilityState', { value: 'hidden', configurable: true });
       w.document.dispatchEvent(new w.Event('visibilitychange'));
@@ -97,6 +116,42 @@ function ready(page: Page): Promise<void> {
 
 function sidOf(page: Page) {
   return page.dom.window.document.cookie.match(/_stl_sid=([^;]+)/)![1];
+}
+
+// Teste A/B: as chaves de página saem da mesma função do servidor, então os
+// testes também conferem que o snippet e o servidor calculam a chave igual.
+const TEST_ID = 'abababab-0000-4000-8000-000000000001';
+const VAR_A = 'abababab-0000-4000-8000-00000000000a';
+const VAR_B = 'abababab-0000-4000-8000-00000000000b';
+const HALF: [number, number] = [50, 50];
+// Pesos extremos para o sorteio não depender do acaso (erro de 1 em 10^8).
+const ALWAYS_A: [number, number] = [100_000_000, 1];
+const ALWAYS_B: [number, number] = [1, 100_000_000];
+
+function redirectTest([wa, wb]: [number, number]): TrackerAbTest {
+  const a = normalizePageUrl('https://www.loja.com.br/oferta')!;
+  const b = normalizePageUrl('https://www.loja.com.br/oferta-b')!;
+  return {
+    id: TEST_ID,
+    m: 'redirect',
+    p: a.key,
+    v: [
+      { id: VAR_A, k: 'A', w: wa, u: a.url, p: a.key },
+      { id: VAR_B, k: 'B', w: wb, u: b.url, p: b.key },
+    ],
+  };
+}
+
+function elementsTest([wa, wb]: [number, number]): TrackerAbTest {
+  return {
+    id: TEST_ID,
+    m: 'elements',
+    p: normalizePageUrl('https://www.loja.com.br/oferta/')!.key,
+    v: [
+      { id: VAR_A, k: 'A', w: wa, u: null, p: null },
+      { id: VAR_B, k: 'B', w: wb, u: null, p: null },
+    ],
+  };
 }
 
 describe('tracker.js', () => {
@@ -482,6 +537,154 @@ describe('tracker.js', () => {
     });
   });
 
+  describe('Teste A/B', () => {
+    const PAGE_A = 'https://www.loja.com.br/oferta';
+    const PAGE_B = 'https://www.loja.com.br/oferta-b';
+    const VID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+    const ab = (page: Page) => page.beacons.find((b) => b.ab)?.ab;
+
+    it('sem teste rodando, o bloco A/B nem vai no script', () => {
+      expect(buildTrackerScript(TID, ENDPOINT)).not.toContain('abRun');
+      expect(buildTrackerScript(TID, ENDPOINT, { param: 'sck', abTests: [] })).not.toContain('abRun');
+      expect(buildTrackerScript(TID, ENDPOINT, { param: 'sck', abTests: [elementsTest(HALF)] })).toContain('abRun');
+    });
+
+    describe('modo elements', () => {
+      const html =
+        '<h1 id="a" data-stl-ab="A">Titulo A</h1><h1 id="b" data-stl-ab="B" hidden>Titulo B</h1>';
+
+      it('mostra os blocos da variante sorteada e esconde os outros', async () => {
+        const page = loadPage(`${PAGE_A}?utm_source=fb`, html, { abTests: [elementsTest(ALWAYS_B)] });
+        await ready(page);
+        const doc = page.dom.window.document;
+
+        expect(doc.getElementById('b')!.hasAttribute('hidden')).toBe(false);
+        expect(doc.documentElement.className).toContain('stl-ab-b');
+        const css = [...doc.querySelectorAll('style')].map((s: any) => s.textContent).join('');
+        expect(css).toContain('[data-stl-ab]:not([data-stl-ab~="B"]){display:none!important}');
+        expect(page.w.getComputedStyle(doc.getElementById('a')).display).toBe('none');
+      });
+
+      it('controle sorteado: a pagina fica como esta', async () => {
+        const page = loadPage(PAGE_A, html, { abTests: [elementsTest(ALWAYS_A)] });
+        await ready(page);
+        const doc = page.dom.window.document;
+        expect(doc.getElementById('b')!.hasAttribute('hidden')).toBe(true);
+        expect(ab(page)).toEqual({ [TEST_ID]: VAR_A });
+      });
+
+      it('o sorteio vai so no primeiro envio da pagina, junto com o pageview', async () => {
+        const page = loadPage(PAGE_A, html, { abTests: [elementsTest(ALWAYS_B)] });
+        await ready(page);
+        page.hide();
+
+        expect(page.beacons.length).toBeGreaterThanOrEqual(2);
+        expect(page.beacons[0].ab).toEqual({ [TEST_ID]: VAR_B });
+        expect(page.beacons[0].events[0].type).toBe('pageview');
+        expect(page.beacons.slice(1).some((b) => b.ab)).toBe(false);
+      });
+
+      it('a chave da pagina ignora www, barra final e query string', async () => {
+        const page = loadPage('https://loja.com.br/oferta/?utm_source=fb', html, { abTests: [elementsTest(ALWAYS_B)] });
+        await ready(page);
+        expect(ab(page)).toEqual({ [TEST_ID]: VAR_B });
+      });
+
+      it('fora da pagina do teste, nada muda', async () => {
+        const page = loadPage('https://www.loja.com.br/obrigado', html, { abTests: [elementsTest(ALWAYS_B)] });
+        await ready(page);
+        expect(ab(page)).toBeUndefined();
+        expect(page.dom.window.document.querySelectorAll('style')).toHaveLength(0);
+      });
+
+      it('sentinel("ab", fn) entrega a letra sorteada, inclusive chamado antes do script', async () => {
+        const early = jest.fn();
+        const page = loadPage(PAGE_A, html, { abTests: [elementsTest(ALWAYS_B)], queued: [['ab', early]] });
+        await ready(page);
+        const late = jest.fn();
+        page.w.sentinel('ab', late);
+        expect(early).toHaveBeenCalledWith({ [TEST_ID]: 'B' });
+        expect(late).toHaveBeenCalledWith({ [TEST_ID]: 'B' });
+      });
+    });
+
+    describe('modo redirect', () => {
+      it('sorteado para outra pagina: vai para ela antes do pageview e guarda o referrer', async () => {
+        const page = loadPage(`${PAGE_A}?utm_source=fb`, '', { abTests: [redirectTest(ALWAYS_B)] });
+        await ready(page);
+
+        expect(page.navigations).toHaveLength(1);
+        expect(page.beacons).toHaveLength(0);
+        const ref = page.dom.window.document.cookie.match(/_stl_abref=([^;]*)/);
+        expect(decodeURIComponent(ref![1])).toBe('https://l.facebook.com/');
+      });
+
+      it('na pagina da propria variante: fica, conta o pageview com o referrer original', async () => {
+        const page = loadPage(`${PAGE_B}?utm_source=fb`, '', {
+          abTests: [redirectTest(ALWAYS_B)],
+          cookies: [`_stl_abref=${encodeURIComponent('https://www.google.com/')}`],
+        });
+        await ready(page);
+
+        expect(page.navigations).toHaveLength(0);
+        expect(ab(page)).toEqual({ [TEST_ID]: VAR_B });
+        const pv = events(page).find((e) => e.type === 'pageview');
+        expect(pv.referrer).toBe('https://www.google.com/');
+        expect(pv.utm_source).toBe('fb');
+        expect(page.dom.window.document.cookie).not.toContain('_stl_abref');
+      });
+
+      it('quem entra direto na pagina B mas foi sorteado para A volta para A', async () => {
+        const page = loadPage(PAGE_B, '', { abTests: [redirectTest(ALWAYS_A)] });
+        await ready(page);
+        expect(page.navigations).toHaveLength(1);
+        expect(page.beacons).toHaveLength(0);
+      });
+
+      it('sem cookie gravavel nao sorteia: nada de redirecionar em loop', async () => {
+        const page = loadPage(PAGE_A, '', { abTests: [redirectTest(ALWAYS_B)], blockCookies: true });
+        await ready(page);
+        expect(page.navigations).toHaveLength(0);
+        expect(page.beacons).toHaveLength(1);
+        expect(page.beacons[0].ab).toBeUndefined();
+      });
+
+      it('Do Not Track: nem sorteia, nem redireciona', async () => {
+        const page = loadPage(PAGE_A, '', { abTests: [redirectTest(ALWAYS_B)], dnt: true });
+        await ready(page);
+        expect(page.navigations).toHaveLength(0);
+        expect(page.beacons).toHaveLength(0);
+      });
+    });
+
+    describe('sorteio', () => {
+      it('o mesmo visitante cai sempre na mesma variante', async () => {
+        const seen = new Set<string>();
+        for (let i = 0; i < 3; i++) {
+          const page = loadPage(PAGE_A, '', { abTests: [elementsTest(HALF)], cookies: [`_stl_vid=${VID}`] });
+          await ready(page);
+          seen.add(ab(page)[TEST_ID]);
+          page.dom.window.close();
+        }
+        expect(seen.size).toBe(1);
+      });
+
+      it('divide os visitantes pelo peso', async () => {
+        let b = 0;
+        const total = 200;
+        for (let i = 0; i < total; i++) {
+          const page = loadPage(PAGE_A, '', { abTests: [elementsTest(HALF)] });
+          await ready(page);
+          if (ab(page)[TEST_ID] === VAR_B) b++;
+          page.dom.window.close();
+        }
+        // 50/50: com 200 visitantes, fora de 70–130 é praticamente impossível (> 4 desvios).
+        expect(b).toBeGreaterThan(70);
+        expect(b).toBeLessThan(130);
+      });
+    });
+  });
+
   describe('Montagem do script', () => {
     it('valor vindo da requisicao nao escapa da string do script', () => {
       const script = buildTrackerScript(TID, 'https://x.com/"+alert(1)+"$&');
@@ -498,6 +701,32 @@ describe('tracker.js', () => {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { gzipSync } = require('zlib');
       expect(gzipSync(buildTrackerScript(TID, ENDPOINT)).length).toBeLessThan(5 * 1024);
+    });
+
+    it('com teste A/B rodando, continua abaixo de 6 KB comprimido', () => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { gzipSync } = require('zlib');
+      const script = buildTrackerScript(TID, ENDPOINT, { param: 'sck', abTests: [redirectTest(HALF)] });
+      expect(gzipSync(script).length).toBeLessThan(6 * 1024);
+      expect(() => new Function(script)).not.toThrow();
+    });
+
+    it('teste A/B com formato torto nao entra no script', () => {
+      const bad = { ...redirectTest(HALF), id: '"+alert(1)+"' };
+      const badUrl = redirectTest(HALF);
+      badUrl.v[1] = { ...badUrl.v[1], u: 'javascript:alert(1)' };
+      for (const t of [bad, badUrl]) {
+        const script = buildTrackerScript(TID, ENDPOINT, { param: 'sck', abTests: [t as TrackerAbTest] });
+        expect(script).not.toContain('abRun');
+        expect(script).not.toContain('alert(1)');
+      }
+    });
+
+    it('URL de variante com marcador de substituicao nao e trocada', () => {
+      const t = redirectTest(HALF);
+      t.v[1] = { ...t.v[1], u: 'https://www.loja.com.br/b?x=__TID__' };
+      const script = buildTrackerScript(TID, ENDPOINT, { param: 'sck', abTests: [t] });
+      expect(script).toContain('https://www.loja.com.br/b?x=__TID__');
     });
   });
 });

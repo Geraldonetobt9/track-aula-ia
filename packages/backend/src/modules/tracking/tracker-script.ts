@@ -39,6 +39,17 @@
  *     devolve utm_* no webhook, só o xcod, e é dele que o processador tira o
  *     anúncio (parseXcod). O indexador continua no sck.
  *   - page_exit ao sair, com o tempo na página.
+ *   - Teste A/B (AB, os testes rodando na área): na página de um teste, o
+ *     visitante cai numa variante por um sorteio fixo pelo _stl_vid — volta
+ *     sempre à mesma. Modo redirect: se a variante é outra página, vai para
+ *     ela antes de qualquer pageview, com a query string da chegada, e o
+ *     referrer original segue no cookie _stl_abref (60s). Modo elements: o
+ *     snippet esconde os blocos data-stl-ab de outras variantes e tira o
+ *     hidden dos da sorteada. O sorteio vai no primeiro envio (campo ab); a
+ *     venda chega à variante pelo indexador: venda → sessão → visitante.
+ *     Sem cookie gravável não há sorteio: sem _stl_vid estável o visitante
+ *     trocaria de variante a cada página.
+ *   - sentinel('ab', fn) entrega { id do teste: letra } da página.
  *   - sentinel('track', 'nome', {props}) para eventos manuais.
  *   - Do Not Track ligado: não faz nada.
  */
@@ -145,6 +156,9 @@ const SOURCE = `(function (w, d) {
   var utm = readParams();
   var arrival = readQuery();
 
+  var abSend = null, abMap = {}, abRef = null, abReveal = function () {};
+  __AB_BLOCK__
+
   // Nome e ID sempre em dois pedaços, para o parseXcod achar cada um no lugar.
   function pair(v) {
     v = v || '';
@@ -190,14 +204,15 @@ const SOURCE = `(function (w, d) {
   function flush() {
     if (timer) { clearTimeout(timer); timer = null; }
     if (!queue.length) return;
-    var batch = queue;
-    queue = [];
-    send(JSON.stringify({
+    var batch = queue, body = {
       tid: TID, vid: vid, sid: sid, fbp: fbp, fbc: fbc || null,
       sr: (w.screen ? w.screen.width + 'x' + w.screen.height : null),
       lang: n.language || null,
       events: batch
-    }));
+    };
+    queue = [];
+    if (abSend) { body.ab = abSend; abSend = null; }
+    send(JSON.stringify(body));
   }
 
   function setParam(href, value, force) {
@@ -412,10 +427,15 @@ const SOURCE = `(function (w, d) {
   function api(cmd) {
     if (cmd === 'track') track(arguments[1], arguments[2]);
     else if (cmd === 'checkout') goCheckout(arguments[1]);
+    else if (cmd === 'ab' && typeof arguments[1] === 'function') {
+      try { arguments[1](abMap); } catch (e) {}
+    }
   }
 
   function pageview() {
-    var id = uuid(), pv = event('pageview', { referrer: d.referrer || null, event_id: id }), i;
+    var ref = abRef !== null ? (abRef || null) : (d.referrer || null);
+    var id = uuid(), pv = event('pageview', { referrer: ref, event_id: id }), i;
+    abReveal();
     for (i = 0; i < PARAMS.length; i++) if (utm[PARAMS[i]]) pv[PARAMS[i]] = utm[PARAMS[i]];
     enqueue(pv, true);
     mirror('PageView', id);
@@ -473,14 +493,128 @@ const SOURCE = `(function (w, d) {
 `;
 
 /**
+ * Bloco do teste A/B. Entra no lugar de __AB_BLOCK__ só quando a área tem
+ * teste rodando: quem não testa nada recebe o script do mesmo tamanho de
+ * antes. Sem ele, abSend, abMap, abRef e abReveal ficam nos valores neutros
+ * declarados no SOURCE.
+ */
+const AB_SOURCE = `  var AB = __AB__, abCookies = getCookie('_stl_vid') === vid, abKey = null;
+  abRef = getCookie('_stl_abref');
+  if (abRef !== null) {
+    setCookie('_stl_abref', '', 0);
+    d.cookie = '_stl_abref=; max-age=0; path=/';
+  }
+
+  function hostPath(host, path) {
+    var h = String(host || '').toLowerCase().replace(/^www\\./, '');
+    return h + String(path || '/').replace(/\\/+$/, '');
+  }
+
+  function abHash(s) {
+    var h = 2166136261, i;
+    for (i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+    }
+    return (h >>> 0) / 4294967296;
+  }
+
+  function abPick(t) {
+    var total = 0, acc = 0, i, r;
+    for (i = 0; i < t.v.length; i++) total += t.v[i].w;
+    r = abHash(vid + ':' + t.id) * total;
+    for (i = 0; i < t.v.length; i++) {
+      acc += t.v[i].w;
+      if (r < acc) return t.v[i];
+    }
+    return t.v[t.v.length - 1];
+  }
+
+  function abTarget(u) {
+    var hash = '', h = u.indexOf('#'), pairs = location.search.replace(/^\\?/, '').split('&'), add = [], i, k;
+    if (h >= 0) { hash = u.slice(h); u = u.slice(0, h); }
+    for (i = 0; i < pairs.length; i++) {
+      k = pairs[i].split('=')[0];
+      if (k && pairs[i].indexOf('=stl_') < 0 && !hasKey(u, k)) add.push(pairs[i]);
+    }
+    if (add.length) u += (u.indexOf('?') >= 0 ? '&' : '?') + add.join('&');
+    return u + (hash || location.hash || '');
+  }
+
+  abReveal = function () {
+    if (!abKey || !d.querySelectorAll) return;
+    var els = d.querySelectorAll('[data-stl-ab~="' + abKey + '"][hidden]'), i;
+    for (i = 0; i < els.length; i++) els[i].removeAttribute('hidden');
+  };
+
+  function abShow(k) {
+    var s = d.createElement('style');
+    s.appendChild(d.createTextNode('[data-stl-ab]:not([data-stl-ab~="' + k + '"]){display:none!important}'));
+    (d.head || d.documentElement).appendChild(s);
+    d.documentElement.className += ' stl-ab-' + k.toLowerCase();
+    abKey = k;
+    abReveal();
+  }
+
+  function abRun() {
+    var here = hostPath(location.hostname, location.pathname), i, j, t, on, pick;
+    if (!abCookies || !AB) return false;
+    for (i = 0; i < AB.length; i++) {
+      t = AB[i];
+      on = t.m === 'elements' && t.p === here;
+      for (j = 0; t.m === 'redirect' && j < t.v.length; j++) if (t.v[j].p === here) on = true;
+      if (!on) continue;
+      pick = abPick(t);
+      if (t.m === 'redirect' && pick.p !== here) {
+        setCookie('_stl_abref', (d.referrer || '').slice(0, 500), 60);
+        try { location.replace(abTarget(pick.u)); return true; } catch (e) { continue; }
+      }
+      abMap[t.id] = pick.k;
+      (abSend = abSend || {})[t.id] = pick.id;
+      if (t.m === 'elements') abShow(pick.k);
+    }
+    return false;
+  }
+
+  if (abRun()) return;
+`;
+
+/**
  * Compactação mínima: tira indentação e linhas vazias. Não há comentário
  * dentro do SOURCE, então não é preciso entender a sintaxe do JS para isso —
  * e nenhum minificador de verdade vira dependência de produção.
  */
-const COMPACT = SOURCE.split('\n')
-  .map((line) => line.trim())
-  .filter(Boolean)
-  .join('\n');
+function compact(source: string): string {
+  return source
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+const COMPACT = compact(SOURCE);
+const COMPACT_AB = compact(AB_SOURCE);
+
+/** Variante de um teste A/B, no formato curto que vai dentro do script. */
+export interface TrackerAbVariant {
+  id: string;
+  /** Letra: A (controle), B, C... */
+  k: string;
+  /** Peso do sorteio. */
+  w: number;
+  /** Modo redirect: a URL da variante e a chave host+caminho dela. */
+  u: string | null;
+  p: string | null;
+}
+
+/** Teste A/B rodando, como o snippet precisa dele. */
+export interface TrackerAbTest {
+  id: string;
+  m: 'redirect' | 'elements';
+  /** Chave host+caminho da página do teste (ver pageKey em ab-tests/ab-url.ts). */
+  p: string;
+  v: TrackerAbVariant[];
+}
 
 export interface TrackerOptions {
   /** Parâmetro que a plataforma devolve no webhook. */
@@ -489,11 +623,46 @@ export interface TrackerOptions {
   pixelId?: string | null;
   /** Hotmart: manda as UTMs da chegada no xcod, que é o que ela devolve no webhook. */
   xcodUtm?: boolean;
+  /** Testes A/B rodando na área. */
+  abTests?: TrackerAbTest[];
 }
 
 const SAFE_PIXEL = /^\d{5,20}$/;
 
 const SAFE_PARAM = /^(sck|src|xcod|trk|utm_term)$/;
+
+const SAFE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const SAFE_KEY = /^[A-E]$/;
+
+/**
+ * Só o que tem o formato esperado entra no script. Os testes vêm do banco,
+ * gravados pelo dono da área, mas o script roda na página dos visitantes
+ * dele: um valor torto aqui não pode virar erro de sintaxe lá.
+ */
+function safeAbTests(tests: TrackerAbTest[] | undefined): TrackerAbTest[] {
+  const out: TrackerAbTest[] = [];
+  for (const t of tests ?? []) {
+    if (!SAFE_ID.test(t.id) || (t.m !== 'redirect' && t.m !== 'elements') || typeof t.p !== 'string') continue;
+    const variants = t.v.filter(
+      (v) =>
+        SAFE_ID.test(v.id) &&
+        SAFE_KEY.test(v.k) &&
+        Number.isFinite(v.w) &&
+        v.w > 0 &&
+        (t.m === 'elements' || (typeof v.u === 'string' && /^https?:\/\//.test(v.u) && typeof v.p === 'string')),
+    );
+    if (variants.length >= 2) out.push({ id: t.id, m: t.m, p: t.p, v: variants });
+  }
+  return out;
+}
+
+/** JSON dentro de JS: U+2028/2029 são quebra de linha para navegador antigo. */
+const LS = String.fromCharCode(0x2028);
+const PS = String.fromCharCode(0x2029);
+
+function jsJson(value: unknown): string {
+  return JSON.stringify(value).split(LS).join('\\u2028').split(PS).join('\\u2029');
+}
 
 /**
  * O script pronto para uma área. Os valores entram via JSON.stringify, então
@@ -508,11 +677,16 @@ export function buildTrackerScript(
 ): string {
   const param = SAFE_PARAM.test(options.param) ? options.param : 'sck';
   const pixel = options.pixelId && SAFE_PIXEL.test(options.pixelId) ? options.pixelId : null;
+  const abTests = safeAbTests(options.abTests);
+  // O bloco A/B entra por último: as URLs das variantes vêm do usuário, e
+  // nenhuma substituição seguinte pode encostar nelas.
+  const ab = abTests.length ? COMPACT_AB.replace('__AB__', () => jsJson(abTests)) : '';
   return COMPACT.replace('__TID__', () => JSON.stringify(workspaceId))
     .replace('__ENDPOINT__', () => JSON.stringify(endpoint))
     .replace('__PARAM__', () => JSON.stringify(param))
     .replace('__PIXEL__', () => JSON.stringify(pixel))
-    .replace('__XCOD_UTM__', () => JSON.stringify(!!options.xcodUtm));
+    .replace('__XCOD_UTM__', () => JSON.stringify(!!options.xcodUtm))
+    .replace('__AB_BLOCK__', () => ab);
 }
 
 /** Resposta para área desconhecida: define sentinel() e não faz nada. */

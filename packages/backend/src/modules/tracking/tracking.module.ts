@@ -5,6 +5,7 @@ import { TrackingIngestService } from './tracking-ingest.service';
 import { TrackingService } from './tracking.service';
 import { VisitorMatchingService } from './visitor-matching.service';
 import { MetaCapiModule } from '../meta-capi/meta-capi.module';
+import { AbTestsModule } from '../ab-tests/ab-tests.module';
 
 /**
  * Rastreio de visitantes: o snippet da página de vendas, a ingestão, a
@@ -15,7 +16,7 @@ import { MetaCapiModule } from '../meta-capi/meta-capi.module';
  * casamento roda dentro do próprio webhook. A retenção é um job do pg_cron.
  */
 @Module({
-  imports: [MetaCapiModule],
+  imports: [MetaCapiModule, AbTestsModule],
   controllers: [TrackingCollectController, TrackingController],
   providers: [TrackingIngestService, TrackingService, VisitorMatchingService],
   exports: [VisitorMatchingService],

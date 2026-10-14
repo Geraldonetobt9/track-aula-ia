@@ -5,6 +5,7 @@ import { TrackingIngestService } from './tracking-ingest.service';
 import { CollectBatch, isBot, parseCollectBody } from './collect-payload';
 import { buildTrackerScript, NOOP_TRACKER_SCRIPT } from './tracker-script';
 import { MetaCapiService, WebEventInput } from '../meta-capi/meta-capi.service';
+import { AbTestsService } from '../ab-tests/ab-tests.service';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const HOST = /^[a-z0-9.-]+(:\d{1,5})?$/i;
@@ -87,6 +88,7 @@ export class TrackingCollectController {
   constructor(
     private readonly ingestService: TrackingIngestService,
     private readonly capi: MetaCapiService,
+    private readonly abTests: AbTestsService,
   ) {}
 
   @Get('tracker.js')
@@ -110,14 +112,20 @@ export class TrackingCollectController {
       return;
     }
 
+    // Os testes A/B rodando vão dentro do script. getScriptTests nunca lança:
+    // sem teste, o script sai igual ao de sempre.
+    const abTests = await this.abTests.getScriptTests(workspaceId);
+
     // Cache curto: trocar a plataforma em Integrações muda o parâmetro do
-    // indexador, e a página do cliente precisa pegar isso logo.
+    // indexador, e a página do cliente precisa pegar isso logo. O mesmo vale
+    // para iniciar ou pausar um teste A/B.
     res.header('Cache-Control', 'public, max-age=300');
     res.status(200).send(
       buildTrackerScript(workspaceId, this.collectUrl(req), {
         param: config?.param ?? 'sck',
         pixelId: config?.pixelId ?? null,
         xcodUtm: config?.platform === 'hotmart',
+        abTests,
       }),
     );
   }
@@ -155,11 +163,13 @@ export class TrackingCollectController {
           city: geoHeader(headers, 'x-vercel-ip-city'),
         };
 
-        // Gravação e envio ao Meta em paralelo: um não depende do outro, e os
-        // dois precisam terminar antes da resposta (a função congela depois).
+        // Gravação, envio ao Meta e sorteio A/B em paralelo: um não depende do
+        // outro, e todos precisam terminar antes da resposta (a função congela
+        // depois). O sorteio só existe no primeiro envio de uma página em teste.
         await Promise.all([
           this.ingestService.ingest(batch, ctx),
           this.capi.sendWebEvents(batch.workspaceId, this.webEvents(batch, ctx)),
+          this.abTests.recordAssignments(batch.workspaceId, batch.visitorId, batch.sessionId, batch.ab),
         ]);
 
         this.setFirstPartyCookies(req, res, batch);

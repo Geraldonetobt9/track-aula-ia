@@ -61,6 +61,8 @@ const Settings = lazyWithReload(() => import("./pages/Settings"));
 const Financial = lazyWithReload(() => import("./pages/Financial"));
 const Rules = lazyWithReload(() => import("./pages/Rules"));
 const Tracking = lazyWithReload(() => import("./pages/Tracking"));
+const AbTests = lazyWithReload(() => import("./pages/AbTests"));
+const AbTestDetail = lazyWithReload(() => import("./pages/AbTestDetail"));
 const Terms = lazyWithReload(() => import("./pages/Terms"));
 const Privacy = lazyWithReload(() => import("./pages/Privacy"));
 const NotFound = lazyWithReload(() => import("./pages/NotFound"));
@@ -127,6 +129,8 @@ const App = () => (
                         <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
                         <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
                         <Route path="/tracking" element={<ProtectedRoute><Tracking /></ProtectedRoute>} />
+                        <Route path="/ab-tests" element={<ProtectedRoute><AbTests /></ProtectedRoute>} />
+                        <Route path="/ab-tests/:id" element={<ProtectedRoute><AbTestDetail /></ProtectedRoute>} />
                         <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                         <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
                         <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />

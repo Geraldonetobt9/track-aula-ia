@@ -36,6 +36,7 @@ Cada documento segue o [template padrao](TEMPLATE.md). Consulte o [glossario](GL
 | [Atribuicao de Vendas](05-sales/sale-attribution.md) | Logica de matching UTM → anuncio |
 | [Rastreio de Visitantes](18-visitor-tracking/visitor-tracking.md) | Snippet da pagina de vendas, funil, jornada do comprador |
 | [API de Conversoes do Meta](18-visitor-tracking/meta-capi.md) | PageView, InitiateCheckout e Purchase pelo servidor, no subdominio do cliente |
+| [Testes A/B](19-ab-tests/ab-tests.md) | Variantes da pagina de vendas sorteadas pelo snippet e medidas pela venda que volta pelo indexador |
 
 ### Core — Financeiro
 | Doc | Descricao |

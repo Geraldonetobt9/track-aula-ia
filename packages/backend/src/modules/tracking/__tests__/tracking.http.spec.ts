@@ -109,6 +109,13 @@ describe('Rotas públicas do rastreio (HTTP)', () => {
       expect(bad.body).toContain('window.sentinel=function(){}');
     });
 
+    it('sem como ler os testes A/B (tabela ausente, banco fora), o script sai igual, sem o bloco', async () => {
+      const res = await app.inject({ method: 'GET', url: `/api/t/tracker.js?tid=${TID}` });
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toContain(JSON.stringify(TID));
+      expect(res.body).not.toContain('abRun');
+    });
+
     it('host estranho nao entra no script', async () => {
       const res = await app.inject({
         method: 'GET',
@@ -193,6 +200,41 @@ describe('Rotas públicas do rastreio (HTTP)', () => {
       expect(capi.sendWebEvents).not.toHaveBeenCalled();
     });
 
+    it('grava o sorteio do teste A/B junto com a visita', async () => {
+      const TEST = 'abababab-0000-4000-8000-000000000001';
+      const VAR = 'abababab-0000-4000-8000-00000000000b';
+      await collect({ tid: TID, vid: VID, sid: SID, ab: { [TEST]: VAR }, events: [{ type: 'pageview', event_id: EID }] });
+
+      const names = rpc.mock.calls.map((c) => c[0]);
+      expect(names).toEqual(expect.arrayContaining(['tracking_ingest', 'ab_record_assignments']));
+      const [, args] = rpc.mock.calls.find((c) => c[0] === 'ab_record_assignments')!;
+      expect(args).toEqual({
+        p_workspace_id: TID,
+        p_visitor_id: VID,
+        p_session_id: SID,
+        p_assignments: [{ test_id: TEST, variant_id: VAR }],
+      });
+    });
+
+    it('sem sorteio, nenhuma chamada a mais no banco', async () => {
+      await collect({ tid: TID, vid: VID, sid: SID, events: [{ type: 'pageview', event_id: EID }] });
+      expect(rpc.mock.calls.map((c) => c[0])).toEqual(['tracking_ingest']);
+    });
+
+    it('falha ao gravar o sorteio nao derruba a visita', async () => {
+      rpc.mockImplementation(async (fn: string) =>
+        fn === 'ab_record_assignments' ? { data: null, error: { message: 'relation does not exist' } } : { data: 1, error: null },
+      );
+      const res = await collect({
+        tid: TID, vid: VID, sid: SID,
+        ab: { 'abababab-0000-4000-8000-000000000001': 'abababab-0000-4000-8000-00000000000b' },
+        events: [{ type: 'pageview', event_id: EID }],
+      });
+      expect(res.statusCode).toBe(200);
+      expect(rpc.mock.calls.map((c) => c[0])).toContain('tracking_ingest');
+      expect(capi.sendWebEvents).toHaveBeenCalled();
+    });
+
     it('falha do banco nao vira erro para o visitante', async () => {
       rpc.mockResolvedValue({ data: null, error: { message: 'relation does not exist' } });
       const res = await collect({ tid: TID, vid: VID, sid: SID, events: [{ type: 'pageview' }] });
@@ -225,6 +267,8 @@ describe('Rotas públicas do rastreio (HTTP)', () => {
     expect(res.statusCode).toBe(401);
     const capiRes = await app.inject({ method: 'GET', url: `/api/capi/settings?workspace_id=${TID}` });
     expect(capiRes.statusCode).toBe(401);
+    const abRes = await app.inject({ method: 'GET', url: `/api/ab-tests?workspace_id=${TID}` });
+    expect(abRes.statusCode).toBe(401);
     const cron = await app.inject({ method: 'GET', url: '/api/capi/retry-cron' });
     expect(cron.statusCode).toBe(401); // sem CRON_SECRET a rota fica fechada
   });
