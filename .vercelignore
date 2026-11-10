@@ -1,0 +1,8 @@
+# Nunca enviar segredos nem lixo local no deploy pela CLI
+.env
+.env.*
+!.env.example
+.vercel.autor-backup
+node_modules
+.turbo
+supabase/.temp
