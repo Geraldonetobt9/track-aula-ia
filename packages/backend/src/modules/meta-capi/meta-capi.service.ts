@@ -69,6 +69,14 @@ function nowSeconds() {
   return Math.floor(Date.now() / 1000);
 }
 
+/**
+ * Venda marcada pelo processor como order bump com transação própria (ex.:
+ * Hotmart, que manda o bump num webhook separado do produto principal).
+ */
+export function isStandaloneOrderBump(row: { metadata?: any }): boolean {
+  return row?.metadata?.is_order_bump === true;
+}
+
 @Injectable()
 export class MetaCapiService {
   private readonly logger = new Logger(MetaCapiService.name);
@@ -241,6 +249,13 @@ export class MetaCapiService {
       const orders = new Map<string, any[]>();
       for (const row of rows ?? []) {
         if (!row.workspace_id) continue;
+        // Order bump que chega como venda separada (Hotmart manda um webhook
+        // por produto) não vira outro Purchase: o Meta contaria 1 cliente como
+        // várias compras. O Purchase sai só com o produto principal.
+        if (isStandaloneOrderBump(row)) {
+          this.logger.log(`[CAPI] Order bump ${row.external_id} nao vira Purchase`);
+          continue;
+        }
         const key = `${row.workspace_id}|${row.order_external_id || row.external_id || row.id}`;
         orders.set(key, [...(orders.get(key) ?? []), row]);
       }
