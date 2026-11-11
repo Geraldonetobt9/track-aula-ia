@@ -388,6 +388,11 @@ export class HotmartProcessor {
         product_id: product.id,
         product_ucode: product.ucode,
         offer: purchase.offer?.code || null,
+        // Order bump vem em webhook próprio, com transação própria. Marcado
+        // aqui para não virar um Purchase a mais na CAPI.
+        is_order_bump: purchase.order_bump?.is_order_bump === true,
+        parent_purchase_transaction:
+          purchase.order_bump?.parent_purchase_transaction || null,
         original_currency: paymentCurrency,
         original_amount: netInPaymentCurrency,
         exchange_rate:
