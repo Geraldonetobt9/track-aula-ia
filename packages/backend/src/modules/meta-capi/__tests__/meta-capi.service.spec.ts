@@ -254,13 +254,27 @@ describe('MetaCapiService', () => {
     it('order bump com transacao propria (Hotmart) nao vira Purchase', async () => {
       const { service } = makeService({
         'sales.select': {
-          data: [line({ id: 'sale-9', external_id: 'HP9', order_external_id: null, amount: 14.9, metadata: { product_id: 777, is_order_bump: true } })],
+          data: [line({ id: 'sale-9', external_id: 'HP9', order_external_id: null, amount: 14.9, metadata: { product_id: 777, is_order_bump: true, parent_purchase_transaction: 'HP1' } })],
           error: null,
         },
         'capi_events.insert': { data: { id: 'row-1' }, error: null },
       });
       await service.sendPurchases(['sale-9']);
       expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('produto principal marcado como bump pela Hotmart (pai = ele mesmo) continua indo', async () => {
+      const { service } = makeService({
+        'sales.select': {
+          data: [line({ metadata: { product_id: 555, is_order_bump: true, parent_purchase_transaction: 'HP1' } })],
+          error: null,
+        },
+        'tracking_sessions.select': { data: SESSION, error: null },
+        'capi_events.insert': { data: { id: 'row-1' }, error: null },
+      });
+      await service.sendPurchases(['sale-1']);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(sentBody().data[0].custom_data).toMatchObject({ order_id: 'HP1' });
     });
 
     it('produto principal da Hotmart (is_order_bump false) continua indo', async () => {

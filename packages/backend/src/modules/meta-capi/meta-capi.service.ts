@@ -72,9 +72,17 @@ function nowSeconds() {
 /**
  * Venda marcada pelo processor como order bump com transação própria (ex.:
  * Hotmart, que manda o bump num webhook separado do produto principal).
+ *
+ * A Hotmart marca o pedido inteiro com order_bump.is_order_bump = true,
+ * inclusive o produto principal, cujo parent_purchase_transaction é a própria
+ * transação. Bump é só a linha cujo pai é OUTRA transação; sem isso o produto
+ * principal também era descartado e nenhum Purchase saía.
  */
-export function isStandaloneOrderBump(row: { metadata?: any }): boolean {
-  return row?.metadata?.is_order_bump === true;
+export function isStandaloneOrderBump(row: { external_id?: string | null; metadata?: any }): boolean {
+  if (row?.metadata?.is_order_bump !== true) return false;
+  const parent = row.metadata?.parent_purchase_transaction;
+  if (!parent) return false;
+  return parent !== row.external_id && parent !== row.metadata?.transaction;
 }
 
 @Injectable()

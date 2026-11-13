@@ -114,4 +114,16 @@ describe('Hotmart tracking parser (snapshot of legacy behavior)', () => {
       expect(extractAdId('120242999999999')).toBe('120242999999999');
     });
   });
+
+  it('nomes com "|" dentro: ancora nos ids, e o ad_id é o do anúncio', () => {
+    const xcod =
+      'FB|EXP-BR-006 | BR | ABERTO | COMPRA | R$90|120252031850870033|EXP-BR-006 | BR | PROTOCOLO | RETOMADA HOSTINGER + TRACK | 6 CRIATIVOS|120252031850880033|EXP-BR-006 | V1 | BR-SACOLA-01-V9-POV2|120252031850860033|Instagram_Stories';
+    const p = parse(xcod);
+    expect(p.utm_source).toBe('FB');
+    expect(p.utm_medium).toBe('EXP-BR-006 | BR | ABERTO | COMPRA | R$90|120252031850870033');
+    expect(p.utm_campaign).toBe('EXP-BR-006 | BR | PROTOCOLO | RETOMADA HOSTINGER + TRACK | 6 CRIATIVOS|120252031850880033');
+    expect(p.utm_content).toBe('EXP-BR-006 | V1 | BR-SACOLA-01-V9-POV2|120252031850860033');
+    expect(p.utm_term).toBe('Instagram_Stories');
+    expect(p.ad_id).toBe('120252031850860033');
+  });
 });
