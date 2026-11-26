@@ -39,7 +39,10 @@ export interface MetaEvent {
 
 /** Um evento do snippet já validado, com o que o servidor sabe da requisição. */
 export interface WebEventInput {
-  type: 'pageview' | 'checkout_click';
+  type: 'pageview' | 'checkout_click' | 'view_content' | 'scroll_75';
+  /** Só ViewContent: valor e moeda da oferta. */
+  value?: number | null;
+  currency?: string | null;
   eventId: string;
   url: string | null;
   visitorId: string;
@@ -63,6 +66,8 @@ interface SendResult {
 const WEB_EVENT_NAME: Record<WebEventInput['type'], string> = {
   pageview: 'PageView',
   checkout_click: 'InitiateCheckout',
+  view_content: 'ViewContent',
+  scroll_75: 'Scroll75',
 };
 
 function nowSeconds() {
@@ -196,6 +201,9 @@ export class MetaCapiService {
         event_id: e.eventId,
         action_source: 'website',
         ...(e.url ? { event_source_url: e.url } : {}),
+        ...(e.type === 'view_content' && e.value && e.currency
+          ? { custom_data: { value: e.value, currency: e.currency } }
+          : {}),
         user_data: buildUserData({
           externalId: e.visitorId,
           ip: e.ip,

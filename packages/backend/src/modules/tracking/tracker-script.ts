@@ -282,12 +282,56 @@ const SOURCE = `(function (w, d) {
     try { w.fbq('init', PIXEL, { external_id: vid }); } catch (e) {}
   }
 
-  function mirror(name, id) {
+  function mirror(name, id, data, custom) {
     if (!PIXEL) return;
     try {
       loadPixel();
-      w.fbq('trackSingle', PIXEL, name, {}, { eventID: id });
+      w.fbq(custom ? 'trackSingleCustom' : 'trackSingle', PIXEL, name, data || {}, { eventID: id });
     } catch (e) {}
+  }
+
+  // Engajamento: ViewContent (~30% de rolagem ou 15 s) e Scroll75, 1x por
+  // sessão, no navegador e na CAPI com o mesmo event_id (o Meta deduplica).
+  var VC_VALUE = 27, VC_CURRENCY = 'BRL', engaged = false;
+
+  function once(key) {
+    try {
+      if (w.sessionStorage.getItem(key)) return false;
+      w.sessionStorage.setItem(key, '1');
+    } catch (e) {}
+    return true;
+  }
+
+  function engagement(name, custom) {
+    var id = uuid(), data = custom ? {} : { value: VC_VALUE, currency: VC_CURRENCY };
+    enqueue(event('custom', { name: name, event_id: id, props: custom ? null : data }));
+    mirror(name, id, data, custom);
+  }
+
+  function watchEngagement() {
+    if (engaged) return;
+    engaged = true;
+    var vcDone = !once('_stl_vc'), s75Done = !once('_stl_s75'), timer = null;
+    if (vcDone && s75Done) return;
+    function viewContent() {
+      if (vcDone) return;
+      vcDone = true;
+      engagement('ViewContent', false);
+    }
+    function onScroll() {
+      var el = d.documentElement, body = d.body || el;
+      var room = Math.max(el.scrollHeight, body.scrollHeight) - (w.innerHeight || el.clientHeight);
+      if (room <= 0) return;
+      var pct = (w.pageYOffset || el.scrollTop || 0) / room;
+      if (pct >= 0.3) viewContent();
+      if (pct >= 0.75 && !s75Done) {
+        s75Done = true;
+        engagement('Scroll75', true);
+      }
+      if (vcDone && s75Done) w.removeEventListener('scroll', onScroll);
+    }
+    if (!vcDone) timer = setTimeout(viewContent, 15000);
+    w.addEventListener('scroll', onScroll, { passive: true });
   }
 
   function exit() {
@@ -440,6 +484,7 @@ const SOURCE = `(function (w, d) {
     enqueue(pv, true);
     mirror('PageView', id);
     ready = true;
+    try { watchEngagement(); } catch (e) {}
     decorateAll();
     if (w.MutationObserver) {
       new w.MutationObserver(scheduleDecorate).observe(d.documentElement, {

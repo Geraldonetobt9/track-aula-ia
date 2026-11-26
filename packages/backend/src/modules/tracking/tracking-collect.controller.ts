@@ -196,10 +196,23 @@ export class TrackingCollectController {
     batch: CollectBatch,
     ctx: { ip: string | null; userAgent: string | null; country: string | null; region: string | null; city: string | null },
   ): WebEventInput[] {
+    const customTypes: Record<string, WebEventInput['type']> = { ViewContent: 'view_content', Scroll75: 'scroll_75' };
     return batch.events
-      .filter((e) => (e.type === 'pageview' || e.type === 'checkout_click') && e.event_id)
-      .map((e) => ({
-        type: e.type as WebEventInput['type'],
+      .filter(
+        (e) =>
+          e.event_id &&
+          (e.type === 'pageview' || e.type === 'checkout_click' || (e.type === 'custom' && !!e.name && !!customTypes[e.name])),
+      )
+      .map((e) => {
+        const type = e.type === 'custom' ? customTypes[e.name as string] : (e.type as WebEventInput['type']);
+        const v = Number(e.props?.value);
+        return { e, type, value: type === 'view_content' && Number.isFinite(v) && v > 0 && v < 100000 ? v : null,
+          currency: type === 'view_content' && typeof e.props?.currency === 'string' && /^[A-Z]{3}$/.test(e.props.currency as string) ? (e.props.currency as string) : null };
+      })
+      .map(({ e, type, value, currency }) => ({
+        type,
+        value,
+        currency,
         eventId: e.event_id!,
         url: e.url,
         visitorId: batch.visitorId,
