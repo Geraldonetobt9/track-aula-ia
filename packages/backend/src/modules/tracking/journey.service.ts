@@ -57,7 +57,11 @@ function todayInSaoPaulo(): string {
 
 /** Chave do criativo: o id do anúncio quando existe, senão o utm_content. */
 export function creativeKey(s: { ad_id: string | null; utm_content: string | null }): string | null {
-  return s.ad_id?.trim() || s.utm_content?.trim() || null;
+  const raw = s.ad_id?.trim() || s.utm_content?.trim() || null;
+  if (!raw) return null;
+  // utm_content costuma vir como "nome do anúncio|<ad_id>": casa pelo ad_id do Facebook.
+  const m = raw.match(/\|\s*(\d{10,})\s*$/);
+  return m ? m[1] : raw;
 }
 
 @Injectable()
@@ -151,7 +155,7 @@ export class JourneyService {
       const soldAt = new Date(sale.sold_at).getTime();
       const own = sale.visitor_id ? byVisitor.get(sale.visitor_id) ?? [] : [];
       const matched = own.find((s) => s.session_id === sale.session_id) ?? null;
-      const lastKey = (matched && creativeKey(matched)) || sale.utm_content?.trim() || null;
+      const lastKey = (matched && creativeKey(matched)) || creativeKey({ ad_id: null, utm_content: sale.utm_content });
 
       if (lastKey) {
         const r = get(lastKey);
@@ -240,7 +244,7 @@ export class JourneyService {
       const buyKeys = new Set<string>();
       for (const sale of list) {
         const m = mySessions.find((s) => s.session_id === sale.session_id);
-        const k = (m && creativeKey(m)) || sale.utm_content?.trim() || null;
+        const k = (m && creativeKey(m)) || creativeKey({ ad_id: null, utm_content: sale.utm_content });
         if (k && sale.status === 'approved') buyKeys.add(k);
         steps.push({ at: sale.sold_at, kind: 'purchase', creative: k, label: `${sale.status === 'approved' ? 'Comprou' : sale.status} ${sale.product_name ?? ''}`.trim(), role: 'comprou' });
       }
