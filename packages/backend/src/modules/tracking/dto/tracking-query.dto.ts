@@ -27,3 +27,9 @@ export class TrackingStatusQueryDto {
   @IsUUID()
   workspace_id!: string;
 }
+
+export class TrackingCustomersQueryDto extends TrackingQueryDto {
+  @IsOptional()
+  @IsString()
+  q?: string;
+}

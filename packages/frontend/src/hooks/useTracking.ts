@@ -221,3 +221,75 @@ export function formatPercent(value: number | null | undefined): string {
   if (value == null) return '—';
   return `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 }
+
+// ---------------------------------------------------------------------------
+// Jornada do cliente
+// ---------------------------------------------------------------------------
+
+export interface JourneyCreative {
+  key: string;
+  name: string;
+  lastClickSales: number;
+  lastClickRevenue: number;
+  assistedSales: number;
+  assistedRevenue: number;
+  metaPurchases: number;
+  spend: number;
+  roiLastClick: number | null;
+  roiTotal: number | null;
+}
+
+export interface JourneyCreativesResponse {
+  creatives: JourneyCreative[];
+  unattributed: { sales: number; revenue: number };
+}
+
+export interface JourneyStep {
+  at: string;
+  kind: 'visit' | 'checkout' | 'purchase';
+  creative: string | null;
+  label: string;
+  role?: 'ajudou' | 'comprou';
+}
+
+export interface JourneyCustomer {
+  key: string;
+  name: string | null;
+  email: string | null;
+  purchases: number;
+  revenue: number;
+  lastPurchaseAt: string;
+  timeline: JourneyStep[];
+}
+
+export function useJourneyCreatives(dateRange: DateRange) {
+  const { activeWorkspaceId } = useWorkspaceContext();
+  const { refetchSignal } = useRefetch();
+  const query = useQuery<JourneyCreativesResponse, Error>({
+    queryKey: ['journey-creatives', activeWorkspaceId, rangeKey(dateRange), refetchSignal],
+    enabled: !!activeWorkspaceId,
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+    retry: false,
+    queryFn: () => api.get<JourneyCreativesResponse>(`/tracking/journey-overview/creatives?${rangeParams(activeWorkspaceId!, dateRange)}`),
+  });
+  return { data: query.data ?? null, loading: query.isLoading, error: query.error?.message ?? null };
+}
+
+export function useJourneyCustomers(dateRange: DateRange, q: string) {
+  const { activeWorkspaceId } = useWorkspaceContext();
+  const { refetchSignal } = useRefetch();
+  const query = useQuery<{ customers: JourneyCustomer[] }, Error>({
+    queryKey: ['journey-customers', activeWorkspaceId, rangeKey(dateRange), q, refetchSignal],
+    enabled: !!activeWorkspaceId,
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+    retry: false,
+    queryFn: () => {
+      const params = rangeParams(activeWorkspaceId!, dateRange);
+      if (q.trim()) params.set('q', q.trim());
+      return api.get<{ customers: JourneyCustomer[] }>(`/tracking/journey-overview/customers?${params}`);
+    },
+  });
+  return { customers: query.data?.customers ?? [], loading: query.isLoading, error: query.error?.message ?? null };
+}

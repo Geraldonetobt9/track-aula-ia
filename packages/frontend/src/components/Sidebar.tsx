@@ -17,6 +17,7 @@ import {
   Zap,
   Users,
   FlaskConical,
+  Route as RouteIcon,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -26,6 +27,7 @@ const navItems = [
   { to: '/campaigns', icon: Megaphone, label: 'Campanhas' },
   { to: '/sales', icon: ShoppingCart, label: 'Vendas' },
   { to: '/tracking', icon: Users, label: 'Eventos' },
+  { to: '/journey', icon: RouteIcon, label: 'Jornada do cliente' },
   { to: '/ab-tests', icon: FlaskConical, label: 'Testes A/B' },
   { to: '/integrations', icon: Link2, label: 'Integrações' },
   { to: '/financial', icon: DollarSign, label: 'Financeiro' },

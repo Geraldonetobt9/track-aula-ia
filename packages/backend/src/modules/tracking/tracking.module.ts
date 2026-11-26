@@ -3,6 +3,7 @@ import { TrackingCollectController } from './tracking-collect.controller';
 import { TrackingController } from './tracking.controller';
 import { TrackingIngestService } from './tracking-ingest.service';
 import { TrackingService } from './tracking.service';
+import { JourneyService } from './journey.service';
 import { VisitorMatchingService } from './visitor-matching.service';
 import { MetaCapiModule } from '../meta-capi/meta-capi.module';
 import { AbTestsModule } from '../ab-tests/ab-tests.module';
@@ -18,7 +19,7 @@ import { AbTestsModule } from '../ab-tests/ab-tests.module';
 @Module({
   imports: [MetaCapiModule, AbTestsModule],
   controllers: [TrackingCollectController, TrackingController],
-  providers: [TrackingIngestService, TrackingService, VisitorMatchingService],
+  providers: [TrackingIngestService, TrackingService, VisitorMatchingService, JourneyService],
   exports: [VisitorMatchingService],
 })
 export class TrackingModule {}
