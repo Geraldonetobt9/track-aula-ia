@@ -15,6 +15,7 @@ const mockSupabase = {
 
 const mockSalesService = {
   upsertManyImported: jest.fn(),
+  linkImportedSales: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockWebhooksService = {
@@ -132,6 +133,53 @@ describe('SalesImportService', () => {
         .catch((e: any) => e);
       expect(err.response.error).toBe('unsupported_schema');
       expect(typeof err.response.missing_column).toBe('string');
+    });
+
+    it('accepts the current Hotmart export: Completo/Aprovado, líquido em Faturamento líquido, sck no checkout', async () => {
+      const buf = fs.readFileSync(fixturePath('hotmart-export-brl-net.csv'));
+      const result = await (service as any).parseAndClassify(buf, 'hotmart-export-brl-net.csv');
+
+      expect(result.invalid).toEqual([]);
+      expect(result.nonApproved).toBe(0);
+      expect(result.approved).toHaveLength(3);
+
+      const bump = result.approved[0];
+      expect(bump.external_id).toBe('HP2735491791C2');
+      expect(bump.amount).toBe(10.93);
+      expect(bump.currency).toBe('BRL');
+      expect(bump.sold_at).toBe('2026-11-28T11:47:48.000Z');
+      // Origem é o id do conjunto (src), não um xcod. Não vira anúncio.
+      expect(bump.ad_id).toBeNull();
+      expect(bump.utm_source).toBeNull();
+      expect(bump.utm_content).toBeNull();
+      expect(bump.metadata.src).toBe('120252294773220033');
+      expect(bump.metadata.adset_fb_id).toBe('120252294773220033');
+      expect(bump.metadata.sck).toBe('stl_486eb6e2-ca04-47d5-a140-de83858ccda5');
+      expect(bump.metadata.tracking_ref).toBe('stl_486eb6e2-ca04-47d5-a140-de83858ccda5');
+
+      expect(result.approved[1].external_id).toBe('HP2735491791C1');
+      expect(result.approved[1].amount).toBe(30.85);
+      expect(result.approved[1].metadata.sck).toBe(bump.metadata.sck);
+
+      expect(result.approved[2].external_id).toBe('HP3145976184');
+      expect(result.approved[2].amount).toBe(30.85);
+      expect(result.approved[2].metadata.sck).toBe('stl_e0343280-68ff-451c-aa34-6743932c6c5a');
+      expect(result.approved[2].metadata.src).toBeNull();
+    });
+
+    it('trata Status Completo como venda aprovada e explica status fora disso', async () => {
+      const header =
+        'Transação;Status;Email;Data de Venda;Origem;Moeda;Valor que você recebeu convertido;Moeda de recebimento;Faturamento líquido\n';
+      const completo =
+        'HP-C;Completo;a@b.com;28/11/2026 08:00:00;;BRL;;BRL;19.90\n';
+      const cancelado =
+        'HP-X;Cancelado;b@b.com;28/11/2026 08:00:00;;BRL;10;BRL;10\n';
+      const buf = Buffer.from(header + completo + cancelado, 'utf-8');
+      const result = await (service as any).parseAndClassify(buf, 'completo.csv');
+      expect(result.approved.map((r: any) => r.external_id)).toEqual(['HP-C']);
+      expect(result.approved[0].amount).toBe(19.9);
+      expect(result.nonApproved).toBe(1);
+      expect(result.rowIssues.map((i: any) => i.reason).join(' ')).toMatch(/Cancelado/);
     });
 
     it('rejects empty files', async () => {
@@ -335,6 +383,7 @@ describe('SalesImportService', () => {
       expect(sent[0].workspace_id).toBe('ws-1');
       expect(sent[0].checkout_integration_id).toBe('int-1');
       expect(mockWebhooksService.matchAndUpdateSale).toHaveBeenCalledTimes(2);
+      expect(mockSalesService.linkImportedSales).toHaveBeenCalledWith(['sale-1', 'sale-2']);
     });
 
     it('pairs ad matching by external_id even if upsertManyImported drops rows (race condition)', async () => {

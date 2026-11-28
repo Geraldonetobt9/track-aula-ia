@@ -1,10 +1,25 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { SupabaseService } from '../../shared/services/supabase.service';
 import { toExclusiveEndDate, toStartOfDayUTC } from '../../shared/helpers/date-range';
+import { AdSpendSyncService, type AdSpendName } from '../facebook/ad-spend-sync.service';
 import type { RangeQuery } from './tracking.service';
+import {
+  type AdIdentity,
+  type CreativeAccum,
+  type SpendSlice,
+  finalizeCreatives,
+  indexAds,
+  canonicalKey,
+} from './creative-spend';
+import { buildPurchaseJourneys, type OrderLine, type SessionLite } from './journey-orders';
+
+export { creativeKey } from './creative-spend';
 
 interface SaleRow {
   id: string;
+  external_id: string | null;
+  order_external_id: string | null;
+  is_order_bump: boolean | null;
   customer_email: string | null;
   customer_name: string | null;
   product_name: string | null;
@@ -14,6 +29,8 @@ interface SaleRow {
   visitor_id: string | null;
   session_id: string | null;
   utm_content: string | null;
+  match_method: string | null;
+  metadata: Record<string, unknown> | null;
 }
 
 interface SessionRow {
@@ -31,22 +48,6 @@ interface SessionRow {
   sale_id: string | null;
 }
 
-export interface CreativeRow {
-  key: string;
-  name: string;
-  /** Vendas em que este criativo foi o último clique. */
-  lastClickSales: number;
-  lastClickRevenue: number;
-  /** Vendas atribuídas a outro criativo, mas em que este apareceu antes na jornada. */
-  assistedSales: number;
-  assistedRevenue: number;
-  /** Compras que o próprio Meta reporta (daily_ad_spend.conversions). */
-  metaPurchases: number;
-  spend: number;
-  roiLastClick: number | null;
-  roiTotal: number | null;
-}
-
 const num = (v: unknown) => Number(v ?? 0) || 0;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const ratio = (rev: number, spend: number) => (spend > 0 ? round2(rev / spend) : null);
@@ -55,18 +56,26 @@ function todayInSaoPaulo(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
 }
 
-/** Chave do criativo: o id do anúncio quando existe, senão o utm_content. */
-export function creativeKey(s: { ad_id: string | null; utm_content: string | null }): string | null {
-  const raw = s.ad_id?.trim() || s.utm_content?.trim() || null;
-  if (!raw) return null;
-  // utm_content costuma vir como "nome do anúncio|<ad_id>": casa pelo ad_id do Facebook.
-  const m = raw.match(/\|\s*(\d{10,})\s*$/);
-  return m ? m[1] : raw;
+function parentTransaction(meta: Record<string, unknown> | null): string | null {
+  const value = meta?.parent_purchase_transaction;
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function lineIsBump(sale: SaleRow): boolean {
+  const parent = parentTransaction(sale.metadata);
+  const fromMeta =
+    sale.metadata?.is_order_bump === true && !!parent && parent !== sale.external_id;
+  return sale.is_order_bump === true || fromMeta;
 }
 
 @Injectable()
 export class JourneyService {
-  constructor(private readonly supabase: SupabaseService) {}
+  private readonly logger = new Logger(JourneyService.name);
+
+  constructor(
+    private readonly supabase: SupabaseService,
+    @Optional() @Inject(AdSpendSyncService) private readonly adSpend?: AdSpendSyncService,
+  ) {}
 
   private async assertOwner(userId: string, workspaceId: string) {
     const { data, error } = await this.supabase
@@ -97,7 +106,9 @@ export class JourneyService {
     const client = this.supabase.getClient();
     const { data: sales, error } = await client
       .from('sales')
-      .select('id, customer_email, customer_name, product_name, amount, status, sold_at, visitor_id, session_id, utm_content')
+      .select(
+        'id, external_id, order_external_id, is_order_bump, customer_email, customer_name, product_name, amount, status, sold_at, visitor_id, session_id, utm_content, match_method, metadata',
+      )
       .eq('workspace_id', workspaceId)
       .gte('sold_at', from)
       .lt('sold_at', to)
@@ -105,14 +116,15 @@ export class JourneyService {
       .limit(5000);
     if (error) throw new Error(error.message);
 
-    const rows = (sales ?? []) as SaleRow[];
+    const rows = ((sales ?? []) as SaleRow[]).filter((s) => s.status === 'approved');
     const visitorIds = [...new Set(rows.map((s) => s.visitor_id).filter((v): v is string => !!v))];
     let sessions: SessionRow[] = [];
-    // Em lotes, para não estourar o tamanho da URL do PostgREST.
     for (let i = 0; i < visitorIds.length; i += 100) {
       const { data, error: sErr } = await client
         .from('tracking_sessions')
-        .select('session_id, visitor_id, started_at, utm_source, utm_campaign, utm_content, ad_id, landing_page, device_type, had_checkout_click, checkout_clicked_at, sale_id')
+        .select(
+          'session_id, visitor_id, started_at, utm_source, utm_campaign, utm_content, ad_id, landing_page, device_type, had_checkout_click, checkout_clicked_at, sale_id',
+        )
         .eq('workspace_id', workspaceId)
         .in('visitor_id', visitorIds.slice(i, i + 100))
         .order('started_at', { ascending: true })
@@ -123,90 +135,172 @@ export class JourneyService {
     return { sales: rows, sessions };
   }
 
+  private toLine(sale: SaleRow): OrderLine {
+    return {
+      id: sale.id,
+      externalId: sale.external_id,
+      orderExternalId: sale.order_external_id,
+      isOrderBump: lineIsBump(sale),
+      parentTransaction: parentTransaction(sale.metadata),
+      amount: num(sale.amount),
+      soldAt: sale.sold_at,
+      productName: sale.product_name,
+      customerName: sale.customer_name,
+      customerEmail: sale.customer_email,
+      visitorId: sale.visitor_id,
+      sessionId: sale.session_id,
+      utmContent: sale.utm_content,
+      matchMethod: sale.match_method,
+    };
+  }
+
+  private toSession(s: SessionRow): SessionLite {
+    return {
+      sessionId: s.session_id,
+      visitorId: s.visitor_id,
+      startedAt: s.started_at,
+      utmSource: s.utm_source,
+      utmCampaign: s.utm_campaign,
+      utmContent: s.utm_content,
+      adId: s.ad_id,
+      landingPage: s.landing_page,
+      deviceType: s.device_type,
+      hadCheckoutClick: s.had_checkout_click,
+    };
+  }
+
+  private sessionsByVisitor(sessions: SessionRow[]): Map<string, SessionLite[]> {
+    const byVisitor = new Map<string, SessionLite[]>();
+    for (const s of sessions) {
+      const list = byVisitor.get(s.visitor_id) ?? [];
+      list.push(this.toSession(s));
+      byVisitor.set(s.visitor_id, list);
+    }
+    return byVisitor;
+  }
+
+  private async loadAdCatalog(workspaceId: string): Promise<AdIdentity[]> {
+    const client = this.supabase.getClient();
+    const nested = await client
+      .from('ads')
+      .select('facebook_ad_id, name, ad_sets(campaigns(name))')
+      .eq('workspace_id', workspaceId)
+      .limit(2000);
+    const rows = nested.error
+      ? (
+          await client
+            .from('ads')
+            .select('facebook_ad_id, name')
+            .eq('workspace_id', workspaceId)
+            .limit(2000)
+        ).data
+      : nested.data;
+    return ((rows ?? []) as any[]).map((row) => ({
+      facebookAdId: row.facebook_ad_id,
+      name: row.name ?? null,
+      campaignName: campaignNameOf(row),
+    }));
+  }
+
+  /**
+   * Traz o gasto do período para daily_ad_spend quando ele está velho.
+   * Falha da Meta não derruba a tela: mostra o que já está gravado.
+   */
+  private async refreshSpend(
+    userId: string,
+    workspaceId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<AdSpendName[]> {
+    if (!this.adSpend) return [];
+    try {
+      return await this.adSpend.refreshForWorkspace(userId, workspaceId, fromDate, toDate);
+    } catch (err: any) {
+      this.logger.warn(`Gasto da jornada não atualizado: ${err?.message ?? err}`);
+      return [];
+    }
+  }
+
   /** Por criativo: último clique, contribuição, Meta, gasto e ROI. */
   async getOverview(userId: string, workspaceId: string, range: RangeQuery) {
     await this.assertOwner(userId, workspaceId);
     const { from, to, fromDate, toDate } = this.range(range);
+    const metaNames = await this.refreshSpend(userId, workspaceId, fromDate, toDate);
     const client = this.supabase.getClient();
-    const { sales, sessions } = await this.loadSales(workspaceId, from, to);
+    const [{ sales, sessions }, catalog, spendResult] = await Promise.all([
+      this.loadSales(workspaceId, from, to),
+      this.loadAdCatalog(workspaceId),
+      client
+        .from('daily_ad_spend')
+        .select('facebook_ad_id, spend, conversions, impressions')
+        .eq('workspace_id', workspaceId)
+        .gte('date', fromDate)
+        .lte('date', toDate)
+        .not('facebook_ad_id', 'is', null)
+        .limit(20000),
+    ]);
+    if (spendResult.error) throw new Error(spendResult.error.message);
 
-    const byVisitor = new Map<string, SessionRow[]>();
-    for (const s of sessions) {
-      const list = byVisitor.get(s.visitor_id) ?? [];
-      list.push(s);
-      byVisitor.set(s.visitor_id, list);
-    }
-
-    const rows = new Map<string, CreativeRow>();
-    const get = (key: string): CreativeRow => {
-      let r = rows.get(key);
-      if (!r) {
-        r = { key, name: key, lastClickSales: 0, lastClickRevenue: 0, assistedSales: 0, assistedRevenue: 0, metaPurchases: 0, spend: 0, roiLastClick: null, roiTotal: null };
-        rows.set(key, r);
+    const journeys = buildPurchaseJourneys(
+      sales.map((s) => this.toLine(s)),
+      this.sessionsByVisitor(sessions),
+    );
+    const identity = indexAds([...catalog, ...metaNames]);
+    const canon = (key: string | null) => (key ? canonicalKey(key, identity) : null);
+    const partials = new Map<string, CreativeAccum>();
+    const touch = (key: string): CreativeAccum => {
+      let row = partials.get(key);
+      if (!row) {
+        row = {
+          key,
+          name: key,
+          campaignName: null,
+          lastClickSales: 0,
+          lastClickRevenue: 0,
+          assistedSales: 0,
+          assistedRevenue: 0,
+          metaPurchases: 0,
+          impressions: 0,
+          spend: 0,
+        };
+        partials.set(key, row);
       }
-      return r;
+      return row;
     };
 
     let unattributed = 0;
     let unattributedRevenue = 0;
-    for (const sale of sales) {
-      if (sale.status !== 'approved') continue;
-      const amount = num(sale.amount);
-      const soldAt = new Date(sale.sold_at).getTime();
-      const own = sale.visitor_id ? byVisitor.get(sale.visitor_id) ?? [] : [];
-      const matched = own.find((s) => s.session_id === sale.session_id) ?? null;
-      const lastKey = (matched && creativeKey(matched)) || creativeKey({ ad_id: null, utm_content: sale.utm_content });
-
-      if (lastKey) {
-        const r = get(lastKey);
-        r.lastClickSales += 1;
-        r.lastClickRevenue += amount;
-      } else {
+    for (const journey of journeys) {
+      // Pedido só de order bump não vira outra venda: o valor creditado é a frente.
+      const counts = journey.amount > 0 || journey.bumps.length === 0;
+      if (!counts) continue;
+      const lastKey = canon(journey.lastClickCreative);
+      if (!lastKey) {
         unattributed += 1;
-        unattributedRevenue += amount;
+        unattributedRevenue += journey.amount;
+        continue;
       }
-
-      // Contribuição: criativos de sessões anteriores, uma vez por venda.
-      const seen = new Set<string>(lastKey ? [lastKey] : []);
-      for (const s of own) {
-        if (new Date(s.started_at).getTime() >= (matched ? new Date(matched.started_at).getTime() : soldAt)) continue;
-        const k = creativeKey(s);
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        const r = get(k);
-        r.assistedSales += 1;
-        r.assistedRevenue += amount;
+      const last = touch(lastKey);
+      last.lastClickSales += 1;
+      last.lastClickRevenue += journey.amount;
+      for (const key of journey.assistKeys) {
+        const assistKey = canon(key);
+        // O mesmo anúncio não "ajuda" a venda que ele mesmo fechou.
+        if (!assistKey || assistKey === lastKey) continue;
+        const row = touch(assistKey);
+        row.assistedSales += 1;
+        row.assistedRevenue += journey.amount;
       }
     }
 
-    // Gasto e compras do Meta por anúncio, no período.
-    const { data: spendRows, error: spendErr } = await client
-      .from('daily_ad_spend')
-      .select('facebook_ad_id, spend, conversions')
-      .eq('workspace_id', workspaceId)
-      .gte('date', fromDate)
-      .lte('date', toDate)
-      .limit(20000);
-    if (spendErr) throw new Error(spendErr.message);
-    for (const d of spendRows ?? []) {
-      if (!d.facebook_ad_id) continue;
-      const r = get(d.facebook_ad_id);
-      r.spend += num(d.spend);
-      r.metaPurchases += num(d.conversions);
-    }
+    const spend: SpendSlice[] = (spendResult.data ?? []).map((d: any) => ({
+      facebookAdId: d.facebook_ad_id,
+      spend: num(d.spend),
+      conversions: num(d.conversions),
+      impressions: num(d.impressions),
+    }));
 
-    // Nomes legíveis dos anúncios.
-    const keys = [...rows.keys()];
-    if (keys.length) {
-      const { data: ads } = await client
-        .from('ads')
-        .select('facebook_ad_id, name')
-        .eq('workspace_id', workspaceId)
-        .in('facebook_ad_id', keys.slice(0, 500));
-      for (const a of ads ?? []) if (a.facebook_ad_id && rows.has(a.facebook_ad_id)) rows.get(a.facebook_ad_id)!.name = a.name;
-    }
-
-    const creatives = [...rows.values()]
+    const creatives = finalizeCreatives(partials.values(), spend, [...catalog, ...metaNames])
       .map((r) => ({
         ...r,
         lastClickRevenue: round2(r.lastClickRevenue),
@@ -215,56 +309,82 @@ export class JourneyService {
         roiLastClick: ratio(r.lastClickRevenue, r.spend),
         roiTotal: ratio(r.lastClickRevenue + r.assistedRevenue, r.spend),
       }))
-      .sort((a, b) => b.lastClickRevenue + b.assistedRevenue - (a.lastClickRevenue + a.assistedRevenue) || b.spend - a.spend);
+      .sort(
+        (a, b) =>
+          b.lastClickRevenue + b.assistedRevenue - (a.lastClickRevenue + a.assistedRevenue) ||
+          b.spend - a.spend,
+      );
 
-    return { creatives, unattributed: { sales: unattributed, revenue: round2(unattributedRevenue) } };
+    return {
+      creatives,
+      unattributed: { sales: unattributed, revenue: round2(unattributedRevenue) },
+    };
   }
 
-  /** Clientes (por e-mail) com a linha do tempo das visitas, cliques e compras. */
+  /** Uma jornada por compra, com a cadeia de criativos e o order bump na mesma venda. */
   async getCustomers(userId: string, workspaceId: string, range: RangeQuery, q?: string) {
     await this.assertOwner(userId, workspaceId);
     const { from, to } = this.range(range);
     const { sales, sessions } = await this.loadSales(workspaceId, from, to);
+    const catalog = await this.loadAdCatalog(workspaceId);
+    const index = indexAds(catalog);
     const term = q?.trim().toLowerCase();
 
-    const byCustomer = new Map<string, SaleRow[]>();
-    for (const s of sales) {
-      const key = (s.customer_email ?? s.visitor_id ?? s.id).toLowerCase();
-      if (term && !key.includes(term) && !(s.customer_name ?? '').toLowerCase().includes(term)) continue;
-      const list = byCustomer.get(key) ?? [];
-      list.push(s);
-      byCustomer.set(key, list);
+    let journeys = buildPurchaseJourneys(
+      sales.map((s) => this.toLine(s)),
+      this.sessionsByVisitor(sessions),
+    );
+
+    if (term) {
+      journeys = journeys.filter(
+        (j) =>
+          (j.customerEmail ?? '').toLowerCase().includes(term) ||
+          (j.customerName ?? '').toLowerCase().includes(term),
+      );
     }
 
-    const customers = [...byCustomer.entries()].map(([key, list]) => {
-      const visitorIds = new Set(list.map((s) => s.visitor_id).filter((v): v is string => !!v));
-      const mySessions = sessions.filter((s) => visitorIds.has(s.visitor_id));
-      type Step = { at: string; kind: 'visit' | 'checkout' | 'purchase'; creative: string | null; label: string; role?: 'ajudou' | 'comprou' };
-      const steps: Step[] = [];
-      const buyKeys = new Set<string>();
-      for (const sale of list) {
-        const m = mySessions.find((s) => s.session_id === sale.session_id);
-        const k = (m && creativeKey(m)) || creativeKey({ ad_id: null, utm_content: sale.utm_content });
-        if (k && sale.status === 'approved') buyKeys.add(k);
-        steps.push({ at: sale.sold_at, kind: 'purchase', creative: k, label: `${sale.status === 'approved' ? 'Comprou' : sale.status} ${sale.product_name ?? ''}`.trim(), role: 'comprou' });
-      }
-      for (const s of mySessions) {
-        const k = creativeKey(s);
-        steps.push({ at: s.started_at, kind: 'visit', creative: k, label: `Visita (${s.utm_source ?? 'direto'}) ${s.landing_page ?? ''}`.trim(), role: k && buyKeys.has(k) ? undefined : k ? 'ajudou' : undefined });
-        if (s.checkout_clicked_at) steps.push({ at: s.checkout_clicked_at, kind: 'checkout', creative: k, label: 'Clicou no checkout' });
-      }
-      steps.sort((a, b) => a.at.localeCompare(b.at));
+    const customers = journeys.slice(0, 200).map((j) => {
+      const creatives: string[] = [];
+      const remember = (raw: string | null) => {
+        if (!raw) return null;
+        const key = canonicalKey(raw, index);
+        if (key && !creatives.includes(key)) creatives.push(key);
+        return key;
+      };
+      const touches = j.touches.map((t) => {
+        const key = remember(t.creativeKey);
+        const ad = key ? index.byId.get(key) : undefined;
+        return {
+          ...t,
+          creativeKey: key,
+          creativeName: ad?.name || t.creativeName,
+          campaignName: ad?.campaignName || t.campaignName,
+        };
+      });
+      const lastClickCreative = remember(j.lastClickCreative);
       return {
-        key,
-        name: list.find((s) => s.customer_name)?.customer_name ?? null,
-        email: list.find((s) => s.customer_email)?.customer_email ?? null,
-        purchases: list.length,
-        revenue: round2(list.filter((s) => s.status === 'approved').reduce((t, s) => t + num(s.amount), 0)),
-        lastPurchaseAt: list[list.length - 1].sold_at,
-        timeline: steps,
+        orderKey: j.orderKey,
+        customerName: j.customerName,
+        customerEmail: j.customerEmail,
+        soldAt: j.soldAt,
+        productName: j.productName,
+        items: j.items,
+        amount: round2(j.amount),
+        bumps: j.bumps.map((b) => ({ productName: b.productName, amount: round2(b.amount) })),
+        matchMethod: j.matchMethod,
+        lastClickCreative,
+        hoursToPurchase: j.hoursToPurchase,
+        creatives,
+        touches,
       };
     });
-    customers.sort((a, b) => b.lastPurchaseAt.localeCompare(a.lastPurchaseAt));
-    return { customers: customers.slice(0, 200) };
+
+    return { customers };
   }
+}
+
+function campaignNameOf(row: any): string | null {
+  const adset = Array.isArray(row?.ad_sets) ? row.ad_sets[0] : row?.ad_sets;
+  const camp = adset && (Array.isArray(adset.campaigns) ? adset.campaigns[0] : adset.campaigns);
+  return camp?.name ?? null;
 }

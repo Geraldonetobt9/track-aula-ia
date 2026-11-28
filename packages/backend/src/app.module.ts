@@ -6,6 +6,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { SharedModule } from './shared/shared.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { FacebookModule } from './modules/facebook/facebook.module';
+import { AdSpendSyncModule } from './modules/facebook/ad-spend-sync.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { FinancialModule } from './modules/financial/financial.module';
 import { PlansModule } from './modules/plans/plans.module';
@@ -38,6 +39,7 @@ const RATE_LIMIT_MAX_REQUESTS = 60;
     SharedModule,
     WebhooksModule,
     FacebookModule,
+    AdSpendSyncModule,
     WorkspacesModule,
     FinancialModule,
     PlansModule,

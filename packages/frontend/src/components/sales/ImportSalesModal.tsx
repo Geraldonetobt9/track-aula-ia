@@ -107,7 +107,7 @@ export function ImportSalesModal({ open, onOpenChange, onImported }: Props) {
             <Upload className="mx-auto h-8 w-8 text-muted-foreground/70" />
             <p className="mt-3 text-sm text-foreground">Selecione um arquivo CSV ou XLSX</p>
             <p className="mt-1 text-xs text-muted-foreground/70">Máx 5 MB, até 5.000 linhas.</p>
-            <p className="mt-1 text-xs text-muted-foreground/70">Apenas vendas com status "Aprovado" são importadas.</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">Entram vendas com status Aprovado ou Completo. O valor é o líquido em reais.</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -164,6 +164,20 @@ export function ImportSalesModal({ open, onOpenChange, onImported }: Props) {
             <div>Com erro (skip)</div>              <div className="text-right">{p.invalid}</div>
           </div>
 
+          {(p.row_issues?.length ?? 0) > 0 && (
+            <div className="max-h-48 overflow-y-auto rounded-md border border-foreground/10 p-3 text-xs">
+              <p className="mb-2 text-muted-foreground/70">
+                Por que {p.row_issues!.length === 1 ? 'esta linha' : 'estas linhas'} não {p.row_issues!.length === 1 ? 'entra' : 'entram'}
+                {p.row_issues!.length >= 100 ? ' (mostrando as primeiras 100)' : ''}:
+              </p>
+              <ul className="space-y-1">
+                {p.row_issues!.map((s) => (
+                  <li key={`${s.row}-${s.reason}`}>Linha {s.row}: {s.reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {p.integrations.length > 1 && (
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground/70">Conta Hotmart</label>
@@ -218,12 +232,12 @@ export function ImportSalesModal({ open, onOpenChange, onImported }: Props) {
             <li>{d.skipped_non_approved} ignoradas (não aprovadas)</li>
             <li>{d.skipped_invalid} com erro</li>
           </ul>
-          {d.invalid_samples.length > 0 && (
-            <details className="text-xs">
-              <summary className="cursor-pointer text-muted-foreground/70">Ver linhas com erro</summary>
+          {((d.row_issues ?? d.invalid_samples).length > 0) && (
+            <details className="text-xs" open>
+              <summary className="cursor-pointer text-muted-foreground/70">Ver linhas que não entraram</summary>
               <ul className="mt-2 space-y-1">
-                {d.invalid_samples.map((s) => (
-                  <li key={s.row}>Linha {s.row}: {s.reason}</li>
+                {(d.row_issues ?? d.invalid_samples).map((s) => (
+                  <li key={`${s.row}-${s.reason}`}>Linha {s.row}: {s.reason}</li>
                 ))}
               </ul>
             </details>

@@ -20,6 +20,28 @@ const REQUIRED_COLUMNS = [
 ];
 
 const AMOUNT_COLUMN = 'Valor que você recebeu convertido';
+const NET_COLUMN = 'Faturamento líquido';
+const APPROVED_STATUS = new Set(['aprovado', 'completo']);
+const INDEXER = /stl_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/** O xcod do rastreador é a string com "|" (utm_source|conjunto|id|...). Um id solto é o src. */
+export function looksLikeXcod(value: string): boolean {
+  return value.includes('|');
+}
+
+export function extractIndexer(value: string | undefined): string | null {
+  if (!value) return null;
+  const match = value.match(INDEXER);
+  return match ? match[0].toLowerCase() : null;
+}
+
+function parseAmount(raw: string | undefined): number | null {
+  if (raw == null) return null;
+  const cleaned = String(raw).trim().replace(/\s/g, '').replace(',', '.');
+  if (!cleaned) return null;
+  const amount = Number(cleaned);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
 
 // The Hotmart export contains four columns literally named "Moeda" (one per
 // adjacent price column). csv-parse/XLSX would otherwise collapse duplicates,
@@ -98,6 +120,8 @@ export interface ClassificationResult {
   approved: ClassifiedRow[];
   nonApproved: number;
   invalid: Array<{ row: number; reason: string }>;
+  /** Motivo de cada linha que não entra: erro de valor/data e status fora de Aprovado/Completo. */
+  rowIssues: Array<{ row: number; reason: string }>;
 }
 
 export interface PreviewResponse {
@@ -107,6 +131,7 @@ export interface PreviewResponse {
   non_approved: number;
   invalid: number;
   invalid_samples: Array<{ row: number; reason: string }>;
+  row_issues: Array<{ row: number; reason: string }>;
   sample_preview: Array<{
     transaction: string;
     product_name: string | null;
@@ -123,6 +148,7 @@ export interface ImportResponse {
   skipped_non_approved: number;
   skipped_invalid: number;
   invalid_samples: Array<{ row: number; reason: string }>;
+  row_issues: Array<{ row: number; reason: string }>;
 }
 
 @Injectable()
@@ -168,6 +194,7 @@ export class SalesImportService {
       non_approved: classified.nonApproved,
       invalid: classified.invalid.length,
       invalid_samples: classified.invalid.slice(0, 5),
+      row_issues: classified.rowIssues.slice(0, 100),
       sample_preview: toImport.slice(0, 5).map((r) => ({
         transaction: r.external_id,
         product_name: r.product_name,
@@ -207,6 +234,10 @@ export class SalesImportService {
 
     const inserted = await this.salesService.upsertManyImported(rows);
 
+    // Mesmo casamento do webhook (stl_ no metadata → tracking_match_sale).
+    // Não passa por upsertFromWebhook, então não dispara Purchase na CAPI.
+    await this.salesService.linkImportedSales(inserted.map((saved) => saved.id));
+
     const sourceByExternalId = new Map(toImport.map((r) => [r.external_id, r]));
     const matchPromises = inserted
       .map((saved) => {
@@ -241,6 +272,7 @@ export class SalesImportService {
       skipped_non_approved: classified.nonApproved,
       skipped_invalid: classified.invalid.length,
       invalid_samples: classified.invalid.slice(0, 5),
+      row_issues: classified.rowIssues.slice(0, 100),
     };
   }
 
@@ -343,53 +375,86 @@ export class SalesImportService {
 
     const approved: ClassifiedRow[] = [];
     const invalid: Array<{ row: number; reason: string }> = [];
+    const rowIssues: Array<{ row: number; reason: string }> = [];
     let nonApproved = 0;
+    const netIdx = header.indexOf(NET_COLUMN);
+
+    const reject = (row: number, reason: string) => {
+      invalid.push({ row, reason });
+      rowIssues.push({ row, reason });
+    };
 
     rows.forEach((raw, idx) => {
       const rowNum = idx + 2;
       const status = (raw['Status'] || '').trim();
-      if (status !== 'Aprovado') {
+      if (!APPROVED_STATUS.has(status.toLowerCase())) {
         nonApproved += 1;
+        rowIssues.push({
+          row: rowNum,
+          reason: status
+            ? `Status "${status}" não entra (só Aprovado e Completo)`
+            : 'Status vazio — só entram Aprovado e Completo',
+        });
         return;
       }
 
       const transaction = (raw['Transação'] || '').trim();
       if (!transaction) {
-        invalid.push({ row: rowNum, reason: 'Transação ausente' });
+        reject(rowNum, 'Transação ausente');
         return;
       }
 
-      const amountStr = (raw[AMOUNT_COLUMN] || '').replace(',', '.').trim();
-      const amount = Number(amountStr);
-      if (!Number.isFinite(amount) || amount <= 0) {
-        invalid.push({ row: rowNum, reason: `${AMOUNT_COLUMN} inválido: "${raw[AMOUNT_COLUMN]}"` });
+      // "Valor que você recebeu convertido" é o líquido em BRL quando a Hotmart
+      // preenche. No export novo essa célula vem vazia e o líquido está em
+      // "Faturamento líquido", com a moeda na coluna imediatamente anterior.
+      const received = parseAmount(raw[AMOUNT_COLUMN]);
+      const net = netIdx >= 0 ? parseAmount(raw[NET_COLUMN]) : null;
+      let amount: number | null = null;
+      let currencyKeyUsed: string | null = null;
+      if (received != null) {
+        amount = received;
+        currencyKeyUsed = currencyKey;
+      } else if (net != null && netIdx > 0) {
+        amount = net;
+        currencyKeyUsed = header[netIdx - 1];
+      }
+      if (amount == null) {
+        reject(
+          rowNum,
+          `${AMOUNT_COLUMN} vazio e ${NET_COLUMN} sem valor em BRL ("${raw[AMOUNT_COLUMN] ?? ''}" / "${raw[NET_COLUMN] ?? ''}")`,
+        );
         return;
       }
 
-      const currency = (raw[currencyKey] || '').trim().toUpperCase();
+      const currency = (raw[currencyKeyUsed!] || '').trim().toUpperCase();
       if (currency !== 'BRL') {
-        invalid.push({
-          row: rowNum,
-          reason: `Moeda de recebimento "${currency || 'vazia'}" não suportada — esta conta Hotmart precisa receber em BRL para importação.`,
-        });
+        reject(
+          rowNum,
+          `Moeda de recebimento "${currency || 'vazia'}" não suportada — esta conta Hotmart precisa receber em BRL para importação.`,
+        );
         return;
       }
 
       const email = (raw['Email'] || '').trim().toLowerCase();
       if (!email) {
-        invalid.push({ row: rowNum, reason: 'Email ausente' });
+        reject(rowNum, 'Email ausente');
         return;
       }
 
       const soldAtLocal = this.parseBrDate(raw['Data de Venda']);
       if (!soldAtLocal) {
-        invalid.push({ row: rowNum, reason: `Data de Venda inválida: "${raw['Data de Venda']}"` });
+        reject(rowNum, `Data de Venda inválida: "${raw['Data de Venda']}"`);
         return;
       }
 
-      const xcod = (raw['Origem'] || '').trim();
-      const parsed = parseXcod(xcod);
-      const adId = parsed.ad_id || extractAdIdFromValue(xcod);
+      const origem = (raw['Origem'] || '').trim();
+      const xcod = looksLikeXcod(origem);
+      const parsed = xcod ? parseXcod(origem) : null;
+      // Id numérico sozinho é o src (conjunto), não o anúncio. Não vira ad_id.
+      const src = !xcod && /^\d{6,}$/.test(origem) ? origem : null;
+      const adId = parsed ? parsed.ad_id || extractAdIdFromValue(origem) : null;
+      const checkoutOrigin = (raw['Origem de Checkout'] || '').trim();
+      const indexer = extractIndexer(checkoutOrigin) || extractIndexer(origem);
 
       const country = this.mapCountry(raw['País']);
       const ddd = (raw['DDD'] || '').trim();
@@ -411,20 +476,25 @@ export class SalesImportService {
         customer_city: (raw['Cidade'] || '').trim() || null,
         customer_country: country,
         payment_method: this.mapPaymentMethod(raw['Tipo de Pagamento']),
-        utm_source: parsed.utm_source,
-        utm_medium: parsed.utm_medium,
-        utm_campaign: parsed.utm_campaign,
-        utm_content: parsed.utm_content,
-        utm_term: parsed.utm_term,
+        utm_source: parsed?.utm_source ?? null,
+        utm_medium: parsed?.utm_medium ?? null,
+        utm_campaign: parsed?.utm_campaign ?? null,
+        utm_content: parsed?.utm_content ?? null,
+        utm_term: parsed?.utm_term ?? null,
         ad_id: adId,
         sold_at: soldAtLocal,
         metadata: {
           source_type: 'import',
           imported_at: new Date().toISOString(),
           original_filename: filename,
-          xcod_raw: xcod,
-          campaign_fb_id: parsed.campaign_fb_id,
-          adset_fb_id: parsed.adset_fb_id,
+          xcod_raw: xcod ? origem : null,
+          src,
+          sck: indexer,
+          // O casamento com a visita procura stl_<sessão> em qualquer lugar do metadata.
+          tracking_ref: indexer,
+          checkout_origin: checkoutOrigin || null,
+          campaign_fb_id: parsed?.campaign_fb_id ?? null,
+          adset_fb_id: parsed?.adset_fb_id ?? src,
         },
       });
     });
@@ -434,6 +504,7 @@ export class SalesImportService {
       approved,
       nonApproved,
       invalid,
+      rowIssues,
     };
   }
 
