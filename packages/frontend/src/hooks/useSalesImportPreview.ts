@@ -8,6 +8,7 @@ export interface ImportPreviewResponse {
   non_approved: number;
   invalid: number;
   invalid_samples: Array<{ row: number; reason: string }>;
+  row_issues?: Array<{ row: number; reason: string }>;
   sample_preview: Array<{
     transaction: string;
     product_name: string | null;

@@ -229,11 +229,13 @@ export function formatPercent(value: number | null | undefined): string {
 export interface JourneyCreative {
   key: string;
   name: string;
+  campaignName: string | null;
   lastClickSales: number;
   lastClickRevenue: number;
   assistedSales: number;
   assistedRevenue: number;
   metaPurchases: number;
+  impressions: number;
   spend: number;
   roiLastClick: number | null;
   roiTotal: number | null;
@@ -244,22 +246,40 @@ export interface JourneyCreativesResponse {
   unattributed: { sales: number; revenue: number };
 }
 
-export interface JourneyStep {
-  at: string;
-  kind: 'visit' | 'checkout' | 'purchase';
-  creative: string | null;
-  label: string;
-  role?: 'ajudou' | 'comprou';
+export type JourneyTouchRole = 'last_click' | 'assist' | 'repeat' | 'none';
+
+export interface JourneyTouch {
+  sessionId: string;
+  startedAt: string;
+  creativeKey: string | null;
+  creativeName: string | null;
+  campaignName: string | null;
+  source: string;
+  landingPage: string | null;
+  deviceType: string | null;
+  hadCheckoutClick: boolean;
+  role: JourneyTouchRole;
 }
 
-export interface JourneyCustomer {
-  key: string;
-  name: string | null;
-  email: string | null;
-  purchases: number;
-  revenue: number;
-  lastPurchaseAt: string;
-  timeline: JourneyStep[];
+export interface JourneyBump {
+  productName: string | null;
+  amount: number;
+}
+
+export interface CustomerJourney {
+  orderKey: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  soldAt: string;
+  productName: string | null;
+  items: number;
+  amount: number;
+  bumps: JourneyBump[];
+  matchMethod: string | null;
+  lastClickCreative: string | null;
+  hoursToPurchase: number | null;
+  creatives: string[];
+  touches: JourneyTouch[];
 }
 
 export function useJourneyCreatives(dateRange: DateRange) {
@@ -279,7 +299,7 @@ export function useJourneyCreatives(dateRange: DateRange) {
 export function useJourneyCustomers(dateRange: DateRange, q: string) {
   const { activeWorkspaceId } = useWorkspaceContext();
   const { refetchSignal } = useRefetch();
-  const query = useQuery<{ customers: JourneyCustomer[] }, Error>({
+  const query = useQuery<{ customers: CustomerJourney[] }, Error>({
     queryKey: ['journey-customers', activeWorkspaceId, rangeKey(dateRange), q, refetchSignal],
     enabled: !!activeWorkspaceId,
     staleTime: 30_000,
@@ -288,8 +308,8 @@ export function useJourneyCustomers(dateRange: DateRange, q: string) {
     queryFn: () => {
       const params = rangeParams(activeWorkspaceId!, dateRange);
       if (q.trim()) params.set('q', q.trim());
-      return api.get<{ customers: JourneyCustomer[] }>(`/tracking/journey-overview/customers?${params}`);
+      return api.get<{ customers: CustomerJourney[] }>(`/tracking/journey-overview/customers?${params}`);
     },
   });
-  return { customers: query.data?.customers ?? [], loading: query.isLoading, error: query.error?.message ?? null };
+  return { journeys: query.data?.customers ?? [], loading: query.isLoading, error: query.error?.message ?? null };
 }

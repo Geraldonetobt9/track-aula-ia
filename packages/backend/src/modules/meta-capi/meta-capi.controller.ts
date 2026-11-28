@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   Headers,
+  Inject,
+  Optional,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -19,6 +21,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SupabaseService } from '../../shared/services/supabase.service';
 import { EncryptionService } from '../../shared/services/encryption.service';
 import { MetaCapiService } from './meta-capi.service';
+import { AdSpendSyncService } from '../facebook/ad-spend-sync.service';
 import { CapiWorkspaceQueryDto, UpdateCapiSettingsDto } from './dto/capi-settings.dto';
 
 const emptyToNull = (v: string | undefined) => (v === undefined ? undefined : v.trim() || null);
@@ -112,6 +115,7 @@ export class MetaCapiCronController {
   constructor(
     private readonly capi: MetaCapiService,
     private readonly config: ConfigService,
+    @Optional() @Inject(AdSpendSyncService) private readonly adSpend?: AdSpendSyncService,
   ) {}
 
   @Get('retry-cron')
@@ -122,6 +126,17 @@ export class MetaCapiCronController {
     if (!secret || got.length !== expected.length || !timingSafeEqual(got, expected)) {
       throw new UnauthorizedException();
     }
-    return this.capi.retryFailed();
+    const capi = await this.capi.retryFailed();
+    // O mesmo horário já acordava o servidor. Aproveita para deixar o gasto
+    // de ontem e de hoje gravado, senão a jornada abre o dia em zero.
+    let spend_refresh: { checked: number; refreshed: number; stopped?: string; error?: string } | null = null;
+    if (this.adSpend) {
+      try {
+        spend_refresh = await this.adSpend.refreshRecentForCron();
+      } catch (err: any) {
+        spend_refresh = { checked: 0, refreshed: 0, error: err?.message ?? 'falha' };
+      }
+    }
+    return { ...capi, spend_refresh };
   }
 }

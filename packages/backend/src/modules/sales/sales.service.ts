@@ -176,6 +176,19 @@ export class SalesService {
     return inserted;
   }
 
+  /**
+   * Liga cada venda importada à visita pelo indexador (sck), do mesmo jeito
+   * que o webhook. Não envia Purchase para a CAPI: importação não é evento novo.
+   */
+  async linkImportedSales(saleIds: string[]): Promise<void> {
+    const CHUNK = 20;
+    for (let i = 0; i < saleIds.length; i += CHUNK) {
+      await Promise.all(
+        saleIds.slice(i, i + CHUNK).map((id) => this.visitorMatching.matchSale(id)),
+      );
+    }
+  }
+
   async getSalesWithDetails(userId: string, filters: SalesFilters) {
     const client = this.supabase.getClient();
     const page = Math.max(1, filters.page ?? 1);

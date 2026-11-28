@@ -7,6 +7,7 @@ export interface ImportCommitResponse {
   skipped_non_approved: number;
   skipped_invalid: number;
   invalid_samples: Array<{ row: number; reason: string }>;
+  row_issues?: Array<{ row: number; reason: string }>;
 }
 
 export function useSalesImportCommit() {
